@@ -1,5 +1,10 @@
+# /
 /vendor
 /.idea
 .env
 .env.local
 node_modules
+/cache
+/images/gallery
+/config/config.db.local.php
+/config/taponecent.com/config.db.local.php

@@ -1,0 +1,7 @@
+body, table, pre {
+	font-size: 12px;
+}
+p.embeded-video, p.embeded-post {
+	background-color: #ffd07a;
+	padding: 4px;
+}

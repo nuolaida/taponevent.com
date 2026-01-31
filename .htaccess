@@ -1,0 +1,32 @@
+#php_value error_prepend_string <!--
+#php_value error_append_string -->
+
+RewriteEngine on
+
+ErrorDocument 404 /404.php
+
+#RewriteCond %{REQUEST_FILENAME} !-f
+#RewriteCond %{REQUEST_FILENAME} !-d
+#RewriteCond %{HTTP_HOST} ^(.+)\.(dev|localhost)$
+#RewriteRule ^paveikslelis-([0-9]+)-([a-z0-9-]+)\.jpg$ https://vafest.lt/paveikslelis-$1-$2\.jpg [L]
+#RewriteRule ^image-([0-9]+)-([a-z0-9-]+)\.jpg$ https://vafest.lt/image-$1-$2\.jpg [L]
+
+RewriteCond %{HTTP_HOST} ^(www\.)?(.+)\.(lt|com)\.(dev|localhost)$ [NC]
+RewriteRule ^(paveikslelis|image)-([0-9]+)-([a-z0-9-]+)\.jpg$ https://%2.%3/$1-$2-$3\.jpg [R=301,L]
+
+RewriteBase /
+#RewriteRule ^paveikslelis-([0-9]+)-([a-z0-9-]+)\.jpg$ /paveikslelis-$1-$2\.jpg [L]
+#RewriteRule ^paveikslelis-([0-9]+)-([a-z0-9-]+)\.jpg$ /includes/img_show.php?id=$1&type=$2 [L]
+#RewriteRule ^image-([0-9]+)-([a-z0-9-]+)\.jpg$ /includes/img_show.php?id=$1&type=$2 [L]
+RewriteRule ^sitemaps.xml$ index.php?module=stuff&action=sitemaps [L]
+
+RewriteRule ^(.*)/admin\.php(.*)$ /admin.php [nc,L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php [nc]
+
+<FilesMatch "\.(ttf|otf|eot|woff)$">
+Header add Access-Control-Allow-Origin "*"
+Header add Access-Control-Allow-Headers "origin, x-requested-with, content-type"
+</FilesMatch>
