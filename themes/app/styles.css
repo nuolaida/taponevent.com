@@ -1,0 +1,465 @@
+body {
+	font-family: Arial, sans-serif;
+	background: #f4f6f8;
+	position: relative;
+	margin: 0;
+	padding: 0 0 60px;
+}
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+/*
+.center-wrapper {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	min-height: 100vh;
+	padding: 20px 0 80px;
+}
+*/
+.center-wrapper {
+	display: flex;
+	flex-direction: column;
+	align-items: center; /* Centruoja turinį horizontaliai */
+	justify-content: flex-start; /* Webview geriau turinį rodyti nuo viršaus */
+	min-height: 100vh;
+	padding: 10px; /* Mažas tarpas nuo kraštų telefone */
+	background: #f4f6f8;
+}
+/*
+.page-center {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+*/
+.page-center {
+	display: block; /* Pakeičiam iš flex į block, kad natūraliai užpildytų plotį */
+	width: 100%; /* Telefonuose visada bus 100% */
+	max-width: 600px; /* Kompiuteryje/Planšetėje neviršys šio pločio */
+	margin: 0 auto; /* Užtikrina centravimą */
+}
+.login-box {
+	background: #fff;
+	padding: 30px 24px;
+	width: 100%; /* Užpildo visą page-center plotį */
+	border-radius: 20px; /* Moderniau - užapvalinti kampai */
+	box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+	display: block; /* Saugiau nei flex login formai */
+}
+
+.login-box h1 {
+	margin-bottom: 24px;
+	font-size: 1.6rem;
+	font-weight: 800;
+	text-align: center;
+	color: #1a1a1a;
+}
+
+/* Įvedimo laukų stilius */
+.login-box label {
+	display: block;
+	margin-bottom: 8px;
+	font-size: 0.9rem;
+	font-weight: 600;
+	color: #666;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.login-box input[type="text"],
+.login-box input[type="password"] {
+	width: 100%;
+	padding: 14px 16px;
+	margin-bottom: 20px;
+	border: 2px solid #f0f0f0;
+	border-radius: 12px;
+	font-size: 1rem;
+	background: #fcfcfc;
+	transition: border-color 0.2s;
+}
+
+.login-box input:focus {
+	border-color: #2c7be5;
+	outline: none;
+	background: #fff;
+}
+
+.login-box button {
+	width: 100%;
+	padding: 16px;
+	background: #1a1a1a; /* Juodas mygtukas atrodo prabangiau */
+	border: none;
+	color: #fff;
+	font-size: 1.1rem;
+	font-weight: bold;
+	border-radius: 12px;
+	cursor: pointer;
+	margin-top: 10px;
+}
+
+/* Renginių sąrašo stilius (Festival list) */
+.te-festival-list {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+
+.te-festival-list li {
+	margin-bottom: 12px;
+}
+
+.te-festival-list li a {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 20px;
+	background: #f8f9fa;
+	text-decoration: none;
+	color: #1a1a1a;
+	border-radius: 14px;
+	font-weight: 600;
+	font-size: 1.1rem;
+	border: 1px solid #eee;
+	transition: all 0.2s;
+}
+
+.te-festival-list li a:active {
+	background: #e9ecef;
+	transform: scale(0.98);
+}
+
+.te-fest-arrow {
+	color: #bbb;
+	font-size: 1.5rem;
+	line-height: 1;
+}
+
+.te-no-data {
+	text-align: center;
+	padding: 20px;
+	color: #888;
+	font-style: italic;
+}
+
+button:disabled {
+	background-color: #ccc !important;
+	cursor: not-allowed;
+	opacity: 0.7;
+}
+
+.footer-bar {
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	width: 100%;
+	background: #fff;
+	border-top: 1px solid #ccc;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 8px 16px;
+	box-shadow: 0 -2px 8px rgba(0,0,0,0.05);
+	z-index: 10000;
+}
+
+.footer-bar .logo {
+	flex: 1;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	height: 40px;
+}
+.footer-bar .logo a {
+	display: block;
+	width: 120px;
+	height: 100%;
+	background: url("/config/taponevent.com/themes/logo_transparent.png") no-repeat center center;
+	background-size: 200px auto;
+}
+
+.footer-bar .menu {
+	position: relative;
+}
+
+.footer-bar .menu span.material-icons {
+	cursor: pointer;
+	user-select: none;
+}
+
+.footer-bar .menu-dropdown {
+	display: none;
+	position: absolute;
+	bottom: 36px;
+	right: 0;
+	background: #fff;
+	border: 1px solid #ccc;
+	border-radius: 4px;
+	list-style: none;
+	padding: 4px 0;
+	min-width: 140px;
+	box-shadow: 0 -2px 10px rgba(0,0,0,0.15);
+	z-index: 10001;
+}
+
+.footer-bar .menu-dropdown li a {
+	display: block;
+	padding: 8px 12px;
+	text-decoration: none;
+	color: #333;
+	font-size: 14px;
+}
+
+.footer-bar .menu-dropdown li a:hover {
+	background: #f0f0f0;
+}
+
+
+.module-list {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+.module-list li {
+	margin-bottom: 12px;
+}
+.module-list li a {
+	display: block;
+	text-decoration: none;
+	text-align: center;
+	padding: 10px;
+	border-radius: 6px;
+	background: #2c7be5;
+	color: #fff;
+	font-size: 15px;
+	transition: background 0.2s ease, transform 0.1s ease;
+}
+.module-list li a span.small {
+	font-size: 0.8em;
+}
+.module-list li a:hover {
+	background: #1a68d1;
+	transform: translateY(-2px);
+}
+.module-list li:last-child {
+	margin-bottom: 0;
+}
+
+
+.messages {
+	width: 320px;
+	margin-bottom: 16px;
+	border-radius: 8px;
+	padding: 12px 16px;
+	font-size: 14px;
+	box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+.messages-error {
+	background: #fdecea;
+	border: 1px solid #f5c2c0;
+	color: #842029;
+}
+.messages ul {
+	margin: 0;
+	padding-left: 20px;
+	list-style-type: disc;
+}
+.messages li {
+	margin: 6px 0;
+	line-height: 1.4;
+}
+
+
+.te-pos-wrapper { font-family: sans-serif; background-color: #f4f7f6; min-height: 100vh; padding-bottom: 50px; width: 100%;; }
+.te-pos-wrapper .te-header { background: #fff; padding: 40px 10px; text-align: center; border-bottom: 2px solid #ddd; margin-bottom: 20px; }
+.te-pos-wrapper #te-total-display { font-size: 5.5rem; font-weight: 800; color: #454545; line-height: 1; margin: 0; }
+
+.te-pos-wrapper .te-container { padding: 0 15px; max-width: 550px; margin: 0 auto; }
+
+.te-pos-wrapper .te-button-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 25px; }
+
+.te-pos-wrapper .te-product-btn {
+	display: flex; justify-content: space-between; align-items: center;
+	padding: 22px 25px; font-size: 1.3rem; font-weight: 600; border: 1px solid #ddd;
+	border-radius: 15px; background: #fff; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.te-pos-wrapper .te-product-btn:active { background: #f0f0f0; transform: translateY(1px); }
+.te-pos-wrapper .te-btn-price { font-weight: 400; color: #777; font-size: 1.2rem; }
+
+.te-pos-wrapper .te-manual-entry { display: flex; gap: 10px; margin-bottom: 30px; }
+.te-pos-wrapper #te-custom-price { flex: 1; padding: 18px; font-size: 1.4rem; border: 2px solid #ddd; border-radius: 15px; outline: none; }
+.te-pos-wrapper #te-add-custom { padding: 0 25px; background: #3498db; color: white; border: none; border-radius: 15px; font-weight: bold; font-size: 1.1rem; }
+
+.te-pos-wrapper .te-cart-card { background: white; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); overflow: hidden; }
+.te-pos-wrapper #te-cart-list { list-style: none; padding: 0; margin: 0; }
+.te-pos-wrapper .te-cart-item { display: flex; justify-content: space-between; align-items: center; padding: 18px 25px; border-bottom: 1px solid #eee; font-size: 1.1rem; }
+.te-pos-wrapper .te-cart-item:last-child { border-bottom: none; }
+.te-pos-wrapper .te-remove-item { color: #e74c3c; font-size: 2.2rem; padding: 0 5px; cursor: pointer; line-height: 1; }
+
+.te-pos-wrapper.te-success-screen {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background-color: #2ecc71;
+}
+
+.te-result-container {
+	background: white;
+	width: 85%;
+	max-width: 400px;
+	padding: 40px 20px;
+	border-radius: 30px;
+	text-align: center;
+	box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+
+.te-paid-amount {
+	font-size: 6rem;
+	font-weight: 800;
+	color: #1a1a1a;
+	margin-bottom: 10px;
+}
+
+.te-divider {
+	height: 2px;
+	background: #f0f0f0;
+	margin: 30px auto;
+	width: 60%;
+}
+
+.te-balance-row {
+	color: #666;
+	font-size: 1.5rem;
+}
+
+.te-balance-label {
+	display: block;
+	text-transform: uppercase;
+	letter-spacing: 1px;
+	font-size: 0.9rem;
+	color: #aaa;
+	margin-bottom: 5px;
+}
+
+.te-balance-value {
+	font-weight: 600;
+	color: #333;
+}
+
+.te-actions {
+	margin-top: 40px;
+}
+
+.te-back-btn {
+	display: inline-block;
+	text-decoration: none;
+	background: #1a1a1a;
+	color: white;
+	padding: 15px 50px;
+	border-radius: 50px;
+	font-weight: bold;
+	font-size: 1.2rem;
+	transition: transform 0.2s;
+}
+
+.te-back-btn:active {
+	transform: scale(0.95);
+}
+
+
+.te-pos-wrapper .te-page-title {
+	margin: 20px 10px 15px;
+	font-size: 1rem;
+	font-weight: 700;
+	color: #999;
+	text-transform: uppercase;
+	letter-spacing: 1px;
+}
+
+.te-history-list {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding: 0 5px;
+}
+
+/* Operacijos kortelė */
+.te-history-card {
+	background: white;
+	padding: 15px 20px;
+	border-radius: 16px;
+	box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+	border: 1px solid #eee;
+}
+
+/* Viršutinė dalis (Laikas) */
+.te-card-top {
+	display: flex;
+	justify-content: flex-end;
+	margin-bottom: 4px;
+}
+
+.te-time-ago {
+	font-size: 0.8rem;
+	color: #bbb;
+}
+
+/* Pagrindinė dalis (Kaina ir Pavadinimas) */
+.te-card-main {
+	display: flex;
+	align-items: baseline; /* Išlygiuoja tekstą pagal jo apačią */
+	gap: 12px;
+}
+.te-card-amount {
+	font-size: 1.1rem;
+	color: #1a1a1a;
+	white-space: nowrap;
+}
+.te-card-title {
+	font-size: 1.1rem;
+	color: #444;
+	font-weight: 500;
+	/* Jei pavadinimas labai ilgas, jis nenulūžta į kitą eilutę */
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.te-card-total {
+	display: flex;
+	align-items: baseline; /* Išlygiuoja tekstą pagal jo apačią */
+	gap: 12px;
+}
+.te-card-total .te-card-amount {
+	font-size: 2.5rem;
+	color: #454545;
+	white-space: nowrap;
+}
+.te-card-total .te-card-part {
+	font-size: 1.5rem;
+	color: #454545;
+	white-space: nowrap;
+}
+
+.te-history-card:active {
+	background-color: #fcfcfc;
+	border-color: #ddd;
+}
+
+.te-topup-theme { background: #fff; min-height: 100vh; }
+.te-topup-header { background: #3498db; padding: 50px 20px; text-align: center; color: white; border-radius: 0 0 30px 30px; }
+.te-topup-header .te-label { font-size: 0.8rem; font-weight: 700; letter-spacing: 2px; opacity: 0.9; }
+.te-display-row { font-size: 4rem; font-weight: 800; margin-top: 10px; }
+.te-currency { font-size: 1.5rem; margin-left: 10px; opacity: 0.8; }
+.te-quick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 25px 10px; }
+.te-amount-btn { background: #f8f9fa; border: 2px solid #3498db; color: #3498db; padding: 25px; border-radius: 20px; font-size: 1.8rem; font-weight: 800; }
+.te-amount-btn:active { background: #3498db; color: white; transform: scale(0.95); }
+.te-input-wrapper { position: relative; margin: 0 10px; }
+#te-custom-price { width: 100%; padding: 15px; border: 2px solid #eee; border-radius: 15px; font-size: 1.2rem; text-align: center; }
+#te-reset-btn { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 1.2rem; color: #ccc; }
+.te-status-bar { text-align: center; margin-top: 30px; color: #3498db; font-weight: 600; }
