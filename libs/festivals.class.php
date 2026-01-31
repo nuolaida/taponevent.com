@@ -4,6 +4,7 @@ class Festivals {
 	var string $site_language;
 	var int $max_topup_ammount;
 	var string $test_nfc_card;
+	var bool $testing = true;
 
 	function  __construct() {
 		global $page_special_config, $Translate;
@@ -424,7 +425,7 @@ class Festivals {
 	
 	function get_festivals_list_by_company_user($user_id, $active=true)
 	{
-		$where = ($active) ? "AND f.time_starts <= " . time() . " AND f.time_ends >= " . time() : "";
+		$where = ($active) ? "AND F.time_starts <= " . time() . " AND F.time_ends >= " . time() : "";
 		$sql = "
 				SELECT F.*,
 				       F.id AS festival_id,
@@ -443,7 +444,7 @@ class Festivals {
 	
 	function get_festivals_item_by_company_user($festival_id, $user_id, $active=true)
 	{
-		$where = ($active) ? "AND f.time_starts <= " . time() . " AND f.time_ends >= " . time() : "";
+		$where = ($active) ? "AND F.time_starts <= " . time() . " AND F.time_ends >= " . time() : "";
 		$sql = "
 				SELECT F.*,
 				       F.id AS festival_id,
