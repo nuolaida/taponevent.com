@@ -27,7 +27,7 @@ switch ($url['_action_']) {
 		$smarty->assign('http_domain', $page_special_config['domain']);
 
 		// festivals
-		require_once(LIBS_MAIN_PATH . 'festivals.class.php');
+		require_once(LIBS_MAIN_PATH . 'Festivals.class.php');
 		$Festivals = new Festivals();
 		$smarty->assign('festivals_list', $Festivals->get_festivals_list(['active' => false]));
 

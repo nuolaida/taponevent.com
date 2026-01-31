@@ -1,7 +1,7 @@
 <?php
 require_once(LIBS_MAIN_PATH . 'countries.class.php');
 $Countries = new Countries();
-require_once(LIBS_MAIN_PATH . 'festivals.class.php');
+require_once(LIBS_MAIN_PATH . 'Festivals.class.php');
 $Festivals = new Festivals();
 require_once(LIBS_MAIN_PATH . 'index.class.php');
 $Index = new Index();

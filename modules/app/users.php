@@ -61,11 +61,10 @@
 		case 'login':
 		case 'loginForm':
 		default:
-	        if ($_SESSION['user']['id']) {
+			if ($_SESSION['user']['id']) {
 		        Location('/app.php');
 		        die();
 			}
 			$template_name = $module_name . '.login';
 	        break;
 	}
-

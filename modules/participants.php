@@ -5,7 +5,7 @@ $Participants = new Participants();
 
 switch ($url['_action_']) {
     case 'show':
-        require_once(LIBS_MAIN_PATH . 'festivals.class.php');
+        require_once(LIBS_MAIN_PATH . 'Festivals.class.php');
         $Festivals = new Festivals();
         require_once(LIBS_MAIN_PATH . 'pictures.class.php');
         $Pictures = new Pictures();

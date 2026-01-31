@@ -79,7 +79,7 @@ class Breweries {
 
 		if (isset($params['festival'])) {
 			if ($params['festival'] == 'active') {
-				require_once(LIBS_MAIN_PATH . 'festivals.class.php');
+				require_once(LIBS_MAIN_PATH . 'Festivals.class.php');
 				$Festivals = new Festivals();
 				$data_festival = $Festivals->get_festivals_list(['is_active' => true]);
 				if ($data_festival) {
@@ -259,7 +259,7 @@ class Breweries {
 	function update_newsletter($brewery_id) {
 		require_once(LIBS_MAIN_PATH . 'Newsletters2.class.php');
 		$Newsletters = new Newsletters2;
-		require_once(LIBS_MAIN_PATH . 'festivals.class.php');
+		require_once(LIBS_MAIN_PATH . 'Festivals.class.php');
 		$Festivals = new Festivals();
 		$key = 'breweries-id';
 		

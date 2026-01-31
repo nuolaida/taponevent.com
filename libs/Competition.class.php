@@ -52,7 +52,7 @@ class Competition {
 		
 		if ($params['festival']) {
 			if ($params['festival'] == 'active') {
-				require_once(LIBS_MAIN_PATH . 'festivals.class.php');
+				require_once(LIBS_MAIN_PATH . 'Festivals.class.php');
 				$Festivals = new Festivals();
 				$data_festival = $Festivals->get_festivals_list(['is_active' => true]);
 				if ($data_festival) {
@@ -314,7 +314,7 @@ class Competition {
 	function update_newsletter_owners($owner_id) {
 		require_once(LIBS_MAIN_PATH . 'Newsletters2.class.php');
 		$Newsletters = new Newsletters2;
-		require_once(LIBS_MAIN_PATH . 'festivals.class.php');
+		require_once(LIBS_MAIN_PATH . 'Festivals.class.php');
 		$Festivals = new Festivals();
 		$key = 'competition-owners-id';
 		
@@ -468,7 +468,7 @@ class Competition {
 	
 	// Delete
 	function delete_judges_item($id) {
-		require_once(LIBS_MAIN_PATH . 'festivals.class.php');
+		require_once(LIBS_MAIN_PATH . 'Festivals.class.php');
 		$Festivals = new Festivals();
 		if (!(int)$id) {
 			return false;
@@ -491,7 +491,7 @@ class Competition {
 	function update_newsletter_judges($judges_id) {
 		require_once(LIBS_MAIN_PATH . 'Newsletters2.class.php');
 		$Newsletters = new Newsletters2;
-		require_once(LIBS_MAIN_PATH . 'festivals.class.php');
+		require_once(LIBS_MAIN_PATH . 'Festivals.class.php');
 		$Festivals = new Festivals();
 		$key = 'competition-judges-id';
 		
@@ -589,7 +589,7 @@ class Competition {
 		
 		if ($params['festival']) {
 			if ($params['festival'] == 'active') {
-				require_once(LIBS_MAIN_PATH . 'festivals.class.php');
+				require_once(LIBS_MAIN_PATH . 'Festivals.class.php');
 				$Festivals = new Festivals();
 				$data_festival = $Festivals->get_festivals_list(['is_active' => true]);
 				if ($data_festival) {
@@ -630,7 +630,7 @@ class Competition {
 	
 	function add_medal_categories_item($form) {
 		global $TextLanguages;
-		require_once(LIBS_MAIN_PATH . 'festivals.class.php');
+		require_once(LIBS_MAIN_PATH . 'Festivals.class.php');
 		$Festivals = new Festivals();
 		
 		$data_festival = $Festivals->get_festivals_item_latest();

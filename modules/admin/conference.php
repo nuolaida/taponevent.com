@@ -1,7 +1,7 @@
 <?php
 	require_once(LIBS_MAIN_PATH . 'Conference.class.php');
 	$Conference = new Conference;
-	require_once(LIBS_MAIN_PATH . 'festivals.class.php');
+	require_once(LIBS_MAIN_PATH . 'Festivals.class.php');
 	$Festivals = new Festivals;
 	$module_name = 'conference';
 	
