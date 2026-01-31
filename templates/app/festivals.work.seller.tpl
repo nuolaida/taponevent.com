@@ -118,17 +118,15 @@
             $.each(cart, function(i, item) { total += item.price; });
             $('#te-total-sum').val(total.toFixed(2));
 
-            // Apsauga nuo dvigubo paspaudimo JS lygyje
             $('.te-pos-wrapper').css('pointer-events', 'none').css('opacity', '0.6');
 
-            // Siunčiame
             $('#te-hidden-form').submit();
         };
     });
 
-    {if $testing_card}
-        $('#te-total-display').on('click', function() { window.processNFC("{$testing_card}"); });
-    {/if}
+	    {if $testing_card}
+	        $('#te-total-display').on('click', function() { window.processNFC("{$testing_card}"); });
+	    {/if}
 
         $('#te-total-display').on('click', function() {
         console.log("Imituojamas NFC nuskaitymas...");

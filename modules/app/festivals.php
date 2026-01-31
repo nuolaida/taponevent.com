@@ -10,7 +10,7 @@
 			$data_festival = $Festivals->get_festivals_item_by_company_user($_SESSION['app']['festival'], $_SESSION['user']['id']);
 			$smarty->assign('data_festival', $data_festival);
 
-			if (is_development_version()) {
+			if (is_development_version() || $Festivals->testing) {
 				$smarty->assign('testing_card', $Festivals->test_nfc_card);
 			}
 			
@@ -46,7 +46,7 @@
 				}
 			}
 			
-			if (!is_development_version() && substr($nfc_id, 0, strlen($Festivals->test_nfc_card)) == $Festivals->test_nfc_card) {
+			if (!is_development_version() && substr($nfc_id, 0, strlen($Festivals->test_nfc_card)) == $Festivals->test_nfc_card && $Festivals->testing) {
 				$_SESSION['main_messages'][] = 'TEST DATA';
 				Location($_SERVER['HTTP_REFERER']);
 				die();
@@ -164,7 +164,7 @@
 			$topup_amount = ($url['topup_amount'] ?? 0);
 			$request_id = $url['request_id'] ?? '';
 			
-			if (!is_development_version() && substr($nfc_id, 0, strlen($Festivals->test_nfc_card)) == $Festivals->test_nfc_card) {
+			if (!is_development_version() && substr($nfc_id, 0, strlen($Festivals->test_nfc_card)) == $Festivals->test_nfc_card && !$Festivals->testing) {
 				$_SESSION['main_messages'][] = 'TEST DATA';
 				Location($_SERVER['HTTP_REFERER']);
 				die();
