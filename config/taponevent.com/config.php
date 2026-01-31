@@ -12,7 +12,6 @@
 	            'port'		=>	465,
 	            'secure'	=>	'ssl',
 	            'username'	=>	'info@vafest.lt',
-	            'password'	=>	'SaqAgT3r::5BuQ6hS',
 	        ],
 	        'logo_file'	=>	SERVER_PATH . 'config/taponevent.com/email_logo.png',
 	    ],
@@ -43,11 +42,17 @@
 		],
 	];
 	
-	
-	
-	
+	$file_local = __DIR__ . '/config.email.php';
+	if (file_exists($file_local)) {
+		include $file_local;
+	}
 	
 	if (is_development_version()) {
-	    $domain_config['domain'] = 'taponevent.com.localhost';
-	    $domain_config['protocol'] = 'http';
+		$domain_config_this = $domain_config;
+		$file_local = __DIR__ . '/config.local.php';
+		if (file_exists($file_local)) {
+			include $file_local;
+			$domain_config = array_replace_recursive($domain_config_this, $domain_config);
+		}
 	}
+	

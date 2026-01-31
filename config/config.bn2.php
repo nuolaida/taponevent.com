@@ -2,8 +2,6 @@
 	$HTTP_SERVER_VARS = &$_SERVER;
 	require_once(SERVER_PATH . 'functions.php');
 	
-	$conf['maps_api_key'] = 'AIzaSyCrZrGzyCW1OnT74gQcXvd9eFQAxrapD8E';
-	
 	$conf["crypt_password"] = 'drgdfg2DF858:QMm';
 	$conf["site_domain"] = $domain_config['domain'];
 	$conf["webmaster_email"] = 'vidmantas@kitoks.lt';

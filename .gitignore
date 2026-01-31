@@ -8,3 +8,5 @@ node_modules
 /images/gallery
 /config/config.db.local.php
 /config/taponevent.com/config.db.local.php
+/config/taponevent.com/config.local.php
+/config/taponevent.com/config.email.php
