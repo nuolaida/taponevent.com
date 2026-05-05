@@ -4,13 +4,16 @@
 	date_default_timezone_set('Europe/Vilnius');
 	
 	function is_development_version() {
-		$is_development_version = false;
-		preg_match("/.*\.(.*)$/", $_SERVER['HTTP_HOST'], $matches);
-		if ($matches[1] == 'localhost') {
-			$is_development_version = true;
+		$host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? '';
+		$host = preg_replace('/:\d+$/', '', (string)$host);
+		$host = strtolower(trim($host));
+		if ($host === 'localhost' || $host === '127.0.0.1' || $host === '::1') {
+			return true;
 		}
-	
-		return $is_development_version;
+		if (substr($host, -10) === '.localhost') {
+			return true;
+		}
+		return false;
 	}
 	
 	ini_set('display_errors', 1);
@@ -319,7 +322,7 @@
 	$smarty->assign('display_layout', ($popup || $syspage['popup']) ? true : false);
 	$smarty->assign('active_module', $url['_module_']);
 	$smarty->assign('active_action', $url['_action_']);
-	$smarty->assign('is_development_version', is_development_version());
+	$smarty->assign('is_development_version', is_development_version() ? 1 : 0);
 	$smarty->assign('display_title_page', ($active_module_config['page'] == 'title') ? 'title' : '');
 	$smarty->assign('language_active', $Translate->language);
 	$smarty->assign('index_html', my_fetch(($active_module_config['index']) ? $active_module_config['index'] : 'index.tpl'));

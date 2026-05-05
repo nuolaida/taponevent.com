@@ -309,12 +309,13 @@ class Festivals {
 		}
 		$slq_params = [
 			'price_id' => $id,
+			'festival_id' => $festival_id,
 		];
 		$sql = "
 			SELECT FP.*, FC.title AS company_title
 			FROM festivals_users_companies_prices FP
 			LEFT JOIN festivals_users_companies FC ON FP.company_id = FC.id
-			WHERE FP.id = :price_id
+			WHERE FP.id = :price_id AND FC.festival_id = :festival_id
 		";
 		return execute_sql_query($sql, 'get row', $slq_params);
 	}
@@ -477,11 +478,11 @@ class Festivals {
 	function check_checkout_by_request_id($request_id): bool
 	{
 		$time_to_check = 10; // seconds
-		
+		$request_id_esc = addslashes((string)$request_id);
 		$sql = "
 			SELECT CKT.id
 			FROM festivals_checkout CKT
-			WHERE CKT.request_id = '" . (int)$request_id . "' AND CKT.user_id = " . (int)$_SESSION['user']['id'] . "
+			WHERE CKT.request_id = '" . $request_id_esc . "' AND CKT.user_id = " . (int)$_SESSION['user']['id'] . "
 				AND CKT.rec_time > " . (time() - $time_to_check) . "
 		";
 		$return = execute_sql_query($sql, 'get one');
@@ -491,8 +492,21 @@ class Festivals {
 	
 	function add_checkout_item($form)
 	{
+		global $adodb;
 		$sql = make_insert_query('festivals_checkout', $form);
-		return execute_sql_query($sql, 'insert');
+		// Use adodb directly to capture errors
+		$adodb->Execute($sql);
+		$errNo = isset($adodb->ErrorNo) ? $adodb->ErrorNo() : 0;
+		$errMsg = isset($adodb->ErrorMsg) ? $adodb->ErrorMsg() : '';
+		if ($errNo) {
+			// MySQL duplicate key error code is 1062
+			if ($errNo == 1062) {
+				return ['success' => false, 'duplicate' => true, 'error_no' => $errNo, 'error_msg' => $errMsg];
+			}
+			return ['success' => false, 'duplicate' => false, 'error_no' => $errNo, 'error_msg' => $errMsg];
+		}
+		$insertId = $adodb->Insert_ID();
+		return ['success' => true, 'insert_id' => $insertId];
 	}
 
 	
@@ -578,5 +592,24 @@ class Festivals {
 	}
 	
 	
+	function check_recent_total_by_nfc($nfc_id, $user_id, $total, $time_to_check = 5)
+	{
+		// total is expected positive (amount charged), stored rows have negative prices for purchases
+		$nfc = addslashes((string)$nfc_id);
+		$uid = (int)$user_id;
+		$sql = "
+			SELECT SUM(price) AS total_price
+			FROM festivals_checkout CKT
+			WHERE CKT.nfc_id = '" . $nfc . "' AND CKT.user_id = " . $uid . "
+				AND CKT.rec_time > " . (time() - (int)$time_to_check) . "
+		";
+		$res = execute_sql_query($sql, 'get one');
+		if ($res === false || $res === null) return false;
+		$total_price = (float)$res; // this is negative for purchases
+		// if the recent total equals -$total (within small epsilon), treat as duplicate
+		return (abs($total_price + (float)$total) < 0.001);
+	}
+	
 }
+
 

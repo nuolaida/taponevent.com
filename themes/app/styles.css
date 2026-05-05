@@ -166,6 +166,7 @@ button:disabled {
 	padding: 8px 16px;
 	box-shadow: 0 -2px 8px rgba(0,0,0,0.05);
 	z-index: 10000;
+	overflow: visible; /* allow enlarged logo to overflow */
 }
 
 .footer-bar .logo {
@@ -174,6 +175,7 @@ button:disabled {
 	justify-content: center;
 	align-items: center;
 	height: 40px;
+	overflow: visible; /* allow logo container to show overflow when scaled */
 }
 .footer-bar .logo a {
 	display: block;
@@ -181,6 +183,12 @@ button:disabled {
 	height: 100%;
 	background: url("/config/taponevent.com/themes/logo_transparent.png") no-repeat center center;
 	background-size: 200px auto;
+	transition: transform 0.18s ease;
+}
+
+.footer-bar .logo a {
+	transform-origin: center center;
+	transform: translateY(-4px) scale(1.2);
 }
 
 .footer-bar .menu {
@@ -463,3 +471,182 @@ button:disabled {
 #te-custom-price { width: 100%; padding: 15px; border: 2px solid #eee; border-radius: 15px; font-size: 1.2rem; text-align: center; }
 #te-reset-btn { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 1.2rem; color: #ccc; }
 .te-status-bar { text-align: center; margin-top: 30px; color: #3498db; font-weight: 600; }
+
+
+.te-error-screen {
+	background-color: #fff5f5; /* Labai šviesiai raudonas fonas */
+}
+
+.te-error-screen .te-paid-amount {
+	color: #e74c3c; /* Ryškiai raudona suma/tekstas */
+}
+
+.te-error-screen .te-back-btn {
+	background-color: #e74c3c;
+	box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+}
+
+.te-error-screen .te-back-btn:active {
+	background-color: #c0392b;
+	transform: scale(0.98);
+}
+
+/* Klaidos ikonos animacija (pasirinktinai, kad atrodytų gyviau) */
+.te-error-icon {
+	display: flex;
+	justify-content: center;
+	margin-bottom: 20px;
+	animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+@keyframes shake {
+	10%, 90% { transform: translate3d(-1px, 0, 0); }
+	20%, 80% { transform: translate3d(2px, 0, 0); }
+	30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+	40%, 60% { transform: translate3d(4px, 0, 0); }
+}
+
+/* Papildoma klasė pranešimui */
+.te-error-msg {
+	font-size: 1.2rem;
+	color: #666;
+	margin: 10px 0 25px;
+	font-weight: 500;
+}
+
+/* App footer menu (moved from themes/style.css) */
+.footer-bar{
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 56px;
+    background: #222;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px;
+    box-shadow: 0 -2px 6px rgba(0,0,0,0.5);
+    z-index: 1000;
+    overflow: visible; /* allow enlarged logo to overflow */
+}
+.footer-bar .logo a{display:block; width:48px; height:48px; background-size:contain; background-repeat:no-repeat}
+
+/* Allow logo container to show overflow when scaled */
+.footer-bar .logo { overflow: visible; }
+
+/* Desktop: slightly enlarge the fixed footer logo visually without changing footer height */
+@media (min-width: 768px) {
+    .footer-bar .logo a {
+        transform-origin: center center;
+        transform: translateY(-4px) scale(1.2);
+        transition: transform 0.18s ease;
+    }
+}
+
+/* small-screen tweaks */
+@media (max-width:480px){
+    .menu-dropdown{right:8px; left:8px; bottom:70px; min-width:auto}
+}
+
+/* Footer logo: scale up visually on mobile without increasing footer height */
+#footer {
+  overflow: visible; /* allow scaled logo to overflow visually */
+}
+#footer .container .col-md-6 img {
+  display: block;
+  margin: 0 auto;
+  max-width: 100%;
+  height: auto;
+  transition: transform 0.18s ease;
+}
+@media (max-width: 767px) {
+  /* Use transform so layout height stays the same */
+  #footer .container .col-md-6 {
+    overflow: visible;
+    position: relative;
+  }
+  /*
+    Use center/center origin so the logo visually scales from the middle.
+    Add a small translateY negative value to nudge the scaled logo upward so
+    it looks bigger while keeping the footer bar height unchanged.
+  */
+  #footer .container .col-md-6 img {
+    transform-origin: center center;
+    transform: translateY(-8px) scale(1.55); /* tweak these values if needed */
+    max-width: none; /* allow scaled visual size */
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+  }
+}
+@media (max-width: 380px) {
+  /* Slightly smaller scale for very narrow phones */
+  #footer .container .col-md-6 img {
+    transform: translateY(-6px) scale(1.35);
+  }
+}
+
+/* Also apply a modest visual scale on desktop so the logo is more visible on larger screens
+   Use transform so the footer's layout height is unchanged. */
+@media (min-width: 768px) {
+  #footer .container .col-md-6 img {
+    transform-origin: center center;
+    transform: translateY(-4px) scale(1.15) !important;
+  }
+}
+
+/* Stronger selectors to override other theme CSS if needed */
+@media (min-width: 768px) {
+  footer#footer .container .col-md-6 img {
+    transform-origin: center center !important;
+    transform: translateY(-4px) scale(1.15) !important;
+    max-width: none !important;
+  }
+}
+
+@media (max-width: 767px) {
+  footer#footer .container .col-md-6 img {
+    transform-origin: center center !important;
+    transform: translateY(-8px) scale(1.55) !important;
+    max-width: none !important;
+  }
+}
+
+/* Fallback absolute specificity */
+footer#footer img {
+  -webkit-transform-origin: center center !important;
+  transform-origin: center center !important;
+}
+
+/* STRONGER: make the fixed footer-bar logo much larger visually (override other rules) */
+.footer-bar .logo a {
+    /* increase clickable area and visual size */
+    width: 160px !important;
+    height: 160px !important;
+    background-size: contain !important;
+    transform-origin: center center !important;
+    transform: translateY(-12px) scale(1.9) !important; /* strongly larger */
+    transition: transform 0.18s ease !important;
+    display: block !important;
+}
+.footer-bar .logo { height: 160px !important; }
+
+/* STRONGER: make main footer image much larger while keeping footer box height unchanged
+   Use max-height to cap rendering and transform to increase visual scale without reflow. */
+#footer .container .col-md-6 img {
+    display: block !important;
+    margin: 0 auto !important;
+    width: auto !important;
+    max-height: 160px !important; /* ensure image isn't taller than this */
+    transform-origin: center center !important;
+    transform: translateY(-10px) scale(1.8) !important; /* strongly larger */
+    max-width: none !important;
+}
+
+/* For very wide screens, keep it slightly bigger but safe */
+@media (min-width: 1200px) {
+    #footer .container .col-md-6 img {
+        max-height: 200px !important;
+        transform: translateY(-12px) scale(2.0) !important;
+    }
+}

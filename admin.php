@@ -9,15 +9,18 @@
 	session_cache_limiter( "must-revalidate" );
 	session_set_cookie_params( time() + 3600 );
 	session_start();
-
-	function is_development_version() {
-		$is_development_version = false;
-		preg_match("/.*\.(.*)$/", $_SERVER['HTTP_HOST'], $matches);
-		if ($matches[1] == 'localhost') {
-			$is_development_version = true;
-		}
 	
-		return $is_development_version;
+	function is_development_version() {
+		$host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? '';
+		$host = preg_replace('/:\d+$/', '', (string)$host);
+		$host = strtolower(trim($host));
+		if ($host === 'localhost' || $host === '127.0.0.1' || $host === '::1') {
+			return true;
+		}
+		if (substr($host, -10) === '.localhost') {
+			return true;
+		}
+		return false;
 	}
 	
 	require_once('config.globals.php');

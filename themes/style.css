@@ -2,3 +2,5 @@ p, pre, ul, ol, dl, dd, blockquote, address, table, fieldset, form {
 	font-size: 1.1em;
 	color: #ddd;
 }
+
+/* Global site-level styles remain here; app-specific styles moved to themes/app/styles.css */

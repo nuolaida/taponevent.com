@@ -27,6 +27,7 @@
 	                       $redirect_to = '/admin.php';
 	                        setcookie('site_admin', true, time() + 60 * 60 * 24 * 365, '/');
 	                    }
+
 	                    $success = true;
 	                }
 	                else if (!$data['is_active']) {

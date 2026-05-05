@@ -1,7 +1,11 @@
 <?php
 	use BestPub\Utils\Services\Db;
 	
-	require_once SERVER_PATH . 'config/' . $page_special_config['keyword'] . '/config.db.php';
+	if (file_exists(SERVER_PATH . 'config/' . $page_special_config['keyword'] . '/config.db.local.php')) {
+		require_once SERVER_PATH . 'config/' . $page_special_config['keyword'] . '/config.db.local.php';
+	} else {
+		require_once SERVER_PATH . 'config/' . $page_special_config['keyword'] . '/config.db.php';
+	}
 	
 	$adodb = ADONewConnection('mysqli');
 	$adodb->Connect($config['db']['host'], $config['db']['user'], $config['db']['password'] , $config['db']['database']);
