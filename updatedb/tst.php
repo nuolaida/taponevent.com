@@ -63,7 +63,6 @@
     <p>Šis įrankis patikrins, ar jūsų gaminami pakabukai yra suderinami su sistema.</p>
     
     <button id="start-btn">PRADĖTI SKENAVIMĄ</button>
-    <button id="retry-btn" style="display: none; margin-top: 12px;">PRAŠYTI LEIDIMO DAR KARTĄ</button>
     
     <div id="status">Laukiama paspaudimo...</div>
     <div id="nfc-id"></div>
@@ -71,24 +70,8 @@
 
 <script>
     const startBtn = document.getElementById('start-btn');
-    const retryBtn = document.getElementById('retry-btn');
     const statusDiv = document.getElementById('status');
     const nfcIdDiv = document.getElementById('nfc-id');
-
-    const getNfcPermissionState = async () => {
-        if (!navigator.permissions || !navigator.permissions.query) return null;
-        try {
-            const result = await navigator.permissions.query({ name: "nfc" });
-            return result.state;
-        } catch (e) {
-            return null;
-        }
-    };
-
-    const showPermissionResetHelp = () => {
-        statusDiv.innerHTML = '<span class="error">Leidimas NFC atmestas. Naršyklė neberodys naujo lango automatiškai. Įjunkite leidimą rankiniu būdu: paspauskite spynos ikoną adreso juostoje -> Site settings -> NFC/Permissions -> Allow, tada pabandykite dar kartą.</span>';
-        retryBtn.style.display = "inline-block";
-    };
 
     // 1. Tikriname ar naršyklė palaiko NFC
     if (!('NDEFReader' in window)) {
@@ -96,16 +79,8 @@
         startBtn.disabled = true;
     }
 
-    const startScan = async () => {
         try {
-            const permissionState = await getNfcPermissionState();
-            if (permissionState === "denied") {
-                showPermissionResetHelp();
-                return;
-            }
-
             statusDiv.textContent = "Prašoma leidimo...";
-            retryBtn.style.display = "none";
             const ndef = new NDEFReader();
             
             // Reikia naudoti scan(), kad gautume prieigą
@@ -137,17 +112,9 @@
             };
 
         } catch (error) {
-            if (error.name === "NotAllowedError" || error.name === "SecurityError") {
-                showPermissionResetHelp();
-            } else {
-                statusDiv.innerHTML = '<span class="error">Klaida: ' + error + '</span>';
-            }
+            statusDiv.innerHTML = '<span class="error">Klaida: ' + error + '</span>';
             console.error(error);
         }
-    };
-
-    startBtn.addEventListener('click', startScan);
-    retryBtn.addEventListener('click', startScan);
 </script>
 
 </body>
