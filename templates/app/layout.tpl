@@ -195,7 +195,7 @@
 	<div class="footer-bar">
 		<div></div>
 		<div class="logo">
-			<a href="/app.php"></a>
+			<div class="logo-mark" aria-hidden="true"></div>
 		</div>
 		<div class="menu">
 			<span class="material-icons" id="menu-icon">menu</span>
