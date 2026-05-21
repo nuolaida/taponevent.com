@@ -133,8 +133,23 @@
         window._lastNFC = window._lastNFC || { tag: null, ts: 0, requestId: null };
 
         window.processNFC = function(nfcTagId, opts) {
+            if (window._nfcModalOpen || (typeof window.isNfcBlockedByModal === 'function' && window.isNfcBlockedByModal())) {
+                try { console.log('Ignored NFC read - modal open'); } catch(e){}
+                return;
+            }
+
+            nfcTagId = (nfcTagId || '').toString().trim();
+            if (!nfcTagId || /^empty\s*tag$/i.test(nfcTagId) || /empty\s*tag/i.test(nfcTagId)) {
+                try { console.warn('Ignored empty NFC tag'); } catch(e){}
+                return;
+            }
+
             var now = Date.now();
             var force = opts && opts.force;
+            if (!force && window._nfcProcessLockedUntil && now < window._nfcProcessLockedUntil) {
+                try { console.log('Ignored NFC read - global cooldown'); } catch(e){}
+                return;
+            }
 
             try {
                 // debug log
@@ -162,18 +177,15 @@
             }
             window._lastNFC.tag = nfcTagId;
             window._lastNFC.ts = now;
+            if (!force) {
+                window._nfcProcessLockedUntil = now + 10000;
+            }
 
             // Reuse the previous requestId for this tag session if present; otherwise generate a new one
             var newId = window._lastNFC.requestId || generateUUID(nfcTagId);
             window._lastNFC.requestId = newId;
 
-            // 1. IŠKART stabdome NFC fiziškai (guard if undefined)
-            if (typeof nfcAbortController !== 'undefined' && nfcAbortController) {
-                try { nfcAbortController.abort(); } catch(e){}
-                nfcAbortController = null;
-            }
-
-            // 2. Paruošiame duomenis
+            // Paruošiame duomenis. NFC readerio neabortiname, kad Android neperimtų tuščios žymos.
             $('#te-request-id').val(newId);
             $('#te-cart-json').val(JSON.stringify(cart));
             $('#te-nfc-id').val(nfcTagId);
@@ -316,11 +328,11 @@
         // Accept NFC forwarded from native app / webview via postMessage
         function handleExternalNfc(tagId) {
             try {
+                if (window._nfcModalOpen) return;
                 if (!tagId) return;
                 console.log('External NFC received', tagId);
-                // Force processing to ensure immediate handling
                 if (typeof window.processNFC === 'function') {
-                    window.processNFC(tagId, { force: true });
+                    window.processNFC(tagId);
                 }
             } catch (e) { console.error('handleExternalNfc error', e); }
         }

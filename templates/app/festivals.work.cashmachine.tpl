@@ -58,20 +58,34 @@
          }
 
          window.processNFC = function(nfcTagId, opts) {
+            if (window._nfcModalOpen || (typeof window.isNfcBlockedByModal === 'function' && window.isNfcBlockedByModal())) {
+                try { console.log('Ignored NFC read - modal open'); } catch(e){}
+                return;
+            }
+
+            nfcTagId = (nfcTagId || '').toString().trim();
+            if (!nfcTagId || /^empty\s*tag$/i.test(nfcTagId) || /empty\s*tag/i.test(nfcTagId)) {
+                try { console.warn('Ignored empty NFC tag'); } catch(e){}
+                return;
+            }
+
             var force = opts && opts.force;
              var amount = parseFloat($('#te-final-amount').val()) || 0;
+             var now = Date.now();
+             if (!force && window._nfcProcessLockedUntil && now < window._nfcProcessLockedUntil) {
+                 try { console.log('Ignored NFC read - global cooldown'); } catch(e){}
+                 return;
+             }
              // If amount is zero, treat this as a balance-check request: still send AJAX to get wallet
              var isBalanceCheck = false;
              if (amount <= 0) {
                  isBalanceCheck = true;
-                 // (don't return) let the AJAX flow run; server will respond with wallet for topup_amount == 0
              }
 
              // simple client-side lock & debounce to avoid duplicate processing when card is held
              window._processingNFC = window._processingNFC || false;
              window._lastNFC = window._lastNFC || { tag: null, ts: 0, requestId: null };
-             var now = Date.now();
-             var debounceMs = 800;
+             var debounceMs = 3000;
              if (window._processingNFC && !force) { return; }
              if (!force && window._lastNFC.tag === nfcTagId && (now - window._lastNFC.ts) < debounceMs) { return; }
 
@@ -79,7 +93,46 @@
                 window._processingNFC = true;
                 window._lastNFC.tag = nfcTagId;
                 window._lastNFC.ts = now;
+                window._nfcProcessLockedUntil = now + 10000;
             }
+
+             function showFinal(respObj) {
+                 if (typeof window.showScanResult === 'function') {
+                     window.showScanResult(respObj || {});
+                 } else {
+                     try { alert((respObj && respObj.message) ? respObj.message : 'Klaida'); } catch(e){}
+                 }
+             }
+
+             if (isBalanceCheck) {
+                 if (!force) {
+                     $('.te-pos-wrapper').css({ 'pointer-events': 'none', 'opacity': '0.6' });
+                 }
+
+                 $.ajax({
+                     url: '/app.php',
+                     method: 'POST',
+                     data: { module: 'festivals', action: 'walletInfo', nfc_id: nfcTagId },
+                     headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                     dataType: 'json'
+                 }).done(function(resp){
+                     if (resp && resp.success) {
+                         try { window._lastWallet = parseFloat(resp.wallet); } catch(e){ window._lastWallet = null; }
+                         showFinal({ success: true, message: '', topup: 0, wallet: resp.wallet });
+                     } else {
+                         showFinal(resp || { success: false, message: 'Klaida' });
+                     }
+                 }).fail(function(jqXHR, textStatus){
+                     showFinal({ success:false, message: 'Tinklo klaida: ' + textStatus });
+                 }).always(function(){
+                     if (!force) {
+                         $('.te-pos-wrapper').css({ 'pointer-events': '', 'opacity': '1' });
+                         window._processingNFC = false;
+                     }
+                     window._lastNFC.ts = Date.now();
+                 });
+                 return;
+             }
 
              // generate request id - prefer secure UUID when possible
              function generateRequestId(nfcTag) {
@@ -193,15 +246,7 @@
                      needWalletFetch = true;
                  }
 
-                 function showFinal(respObj) {
-                     if (typeof window.showScanResult === 'function') {
-                         window.showScanResult(respObj || {});
-                     } else {
-                         try { alert((respObj && respObj.message) ? respObj.message : 'Klaida'); } catch(e){}
-                     }
-                 }
-
-                 if (needWalletFetch) {
+                  if (needWalletFetch) {
                      $.ajax({
                          url: '/app.php',
                          method: 'POST',
