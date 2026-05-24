@@ -197,6 +197,32 @@
             panel.hidden = false;
         }
 
+        function getNfcStartErrorMessage(error) {
+            const name = error && error.name ? error.name : '';
+
+            if (!window.isSecureContext) {
+                return 'NFC skenavimui reikia HTTPS. Per paprastą HTTP telefone neveiks.';
+            }
+            if (!('NDEFReader' in window)) {
+                return 'Ši naršyklė nepalaiko NFC skenavimo. Naudokite Android Chrome.';
+            }
+
+            switch (name) {
+                case 'NotAllowedError':
+                    return 'Chrome neleido įjungti NFC. Paspauskite „Įjungti“ ir suteikite leidimą Chrome lange.';
+                case 'NotSupportedError':
+                    return 'Šis telefonas arba naršyklė nepalaiko Web NFC.';
+                case 'NotReadableError':
+                    return 'NFC nepasileido. Patikrinkite, ar telefone įjungtas NFC.';
+                case 'SecurityError':
+                    return 'NFC blokuojamas dėl puslapio saugumo. Atidarykite per HTTPS ir bandykite dar kartą.';
+                case 'InvalidStateError':
+                    return 'NFC skeneris šiuo metu nepasiekiamas. Įjunkite NFC telefone arba perkraukite Chrome.';
+                default:
+                    return 'Nepavyko įjungti NFC skenavimo. Patikrinkite NFC nustatymus telefone ir bandykite dar kartą.';
+            }
+        }
+
         function hideNfcEnablePrompt() {
             const panel = document.getElementById('nfc-enable-panel');
             if (panel) panel.hidden = true;
@@ -232,11 +258,24 @@
         }
 
         async function startNfcScanning(options) {
-            if (nfcPaused || isScanResultOpen()) return;
-            if (nfcScanActive && nfcReader) return;
-            if (nfcScanStarting) return;
+            if (nfcPaused || isScanResultOpen()) {
+                showNfcEnablePrompt('NFC skenavimas laikinai sustabdytas, kol rodomas rezultato langas.');
+                return;
+            }
+            if (nfcScanActive && nfcReader) {
+                hideNfcEnablePrompt();
+                return;
+            }
+            if (nfcScanStarting) {
+                showNfcEnablePrompt('NFC skenavimas jungiamas. Palaukite Chrome leidimo lango.');
+                return;
+            }
             nfcScanStarting = true;
             options = options || {};
+
+            if (options.userInitiated) {
+                showNfcEnablePrompt('Jungiamas NFC skenavimas. Jei Chrome prašo leidimo, paspauskite „Leisti“.');
+            }
 
             registerNfcAbortController(new AbortController());
 
@@ -285,9 +324,9 @@
                     const permissionState = await getNfcPermissionState();
                     if (permissionState === 'denied' || (e && e.name === 'NotAllowedError')) {
                         setNfcEnabledFlag(false);
-                        showNfcEnablePrompt('NFC skenavimas išjungtas. Paspauskite „Įjungti“ ir Chrome lange suteikite leidimą.');
+                        showNfcEnablePrompt(getNfcStartErrorMessage(e));
                     } else {
-                        showNfcEnablePrompt('Nepavyko įjungti NFC skenavimo. Paspauskite „Įjungti“ ir bandykite dar kartą.');
+                        showNfcEnablePrompt(getNfcStartErrorMessage(e));
                     }
                 }
             } finally {

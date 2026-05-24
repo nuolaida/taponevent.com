@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="lt">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>NFC testas</title>
+	<style>
+		body {
+			margin: 0;
+			padding: 16px;
+			font-family: Arial, sans-serif;
+			background: #f4f6f8;
+			color: #1f2933;
+		}
+
+		.wrap {
+			max-width: 620px;
+			margin: 0 auto;
+		}
+
+		.controls {
+			display: grid;
+			gap: 10px;
+			margin: 16px 0;
+		}
+
+		button {
+			border: 0;
+			border-radius: 6px;
+			padding: 14px 16px;
+			font-size: 17px;
+			font-weight: 700;
+			color: #fff;
+			background: #2563eb;
+		}
+
+		button.stop {
+			background: #b91c1c;
+		}
+
+		button.modal {
+			background: #111827;
+		}
+
+		.status {
+			padding: 12px;
+			border-radius: 6px;
+			background: #fff;
+			border: 1px solid #d8dee9;
+			font-weight: 700;
+		}
+
+		.log {
+			min-height: 240px;
+			max-height: 420px;
+			overflow: auto;
+			white-space: pre-wrap;
+			padding: 12px;
+			background: #0f172a;
+			color: #d1fae5;
+			border-radius: 6px;
+			font-family: Consolas, monospace;
+			font-size: 13px;
+		}
+
+		.test-modal {
+			display: none;
+			position: fixed;
+			inset: 0;
+			z-index: 99;
+			align-items: center;
+			justify-content: center;
+			background: rgba(0,0,0,0.55);
+			padding: 16px;
+		}
+
+		.test-modal.open {
+			display: flex;
+		}
+
+		.test-modal-box {
+			width: 100%;
+			max-width: 360px;
+			padding: 18px;
+			border-radius: 8px;
+			background: #fff;
+			text-align: center;
+		}
+
+		.test-modal-box p {
+			margin: 0 0 14px;
+			font-size: 18px;
+			font-weight: 700;
+		}
+	</style>
+</head>
+<body>
+	<div class="wrap">
+		<h1>NFC stop/start testas</h1>
+		<div class="status" id="status">Būsena: neįjungta</div>
+
+		<div class="controls">
+			<button type="button" id="startBtn">Įjungti skenavimą</button>
+			<button type="button" class="stop" id="stopBtn">Išjungti skenavimą</button>
+			<button type="button" class="modal" id="modalBtn">Atidaryti modalą ir ignoruoti NFC</button>
+			<button type="button" id="clearBtn">Išvalyti logą</button>
+		</div>
+
+		<div class="log" id="log"></div>
+	</div>
+
+	<div class="test-modal" id="testModal">
+		<div class="test-modal-box">
+			<p>Modalas atidarytas</p>
+			<button type="button" id="closeModalBtn">Uždaryti ir įjungti NFC</button>
+		</div>
+	</div>
+
+	<script>
+		let abortController = null;
+		let reader = null;
+		let scanEnabled = false;
+		let modalOpen = false;
+		let readCount = 0;
+
+		const statusEl = document.getElementById('status');
+		const logEl = document.getElementById('log');
+		const modalEl = document.getElementById('testModal');
+
+		function log(message) {
+			const time = new Date().toLocaleTimeString();
+			logEl.textContent = '[' + time + '] ' + message + '\n' + logEl.textContent;
+		}
+
+		function setStatus(message) {
+			statusEl.textContent = 'Būsena: ' + message;
+		}
+
+		function stopScan(reason) {
+			scanEnabled = false;
+			if (reader) {
+				try { reader.onreading = null; } catch (e) {}
+				reader = null;
+			}
+			if (abortController) {
+				try { abortController.abort(); } catch (e) {}
+				abortController = null;
+			}
+			setStatus('išjungta');
+			log('STOP: ' + (reason || 'rankinis'));
+		}
+
+		async function startScan() {
+			if (modalOpen) {
+				log('START atmestas: modalas atidarytas');
+				return;
+			}
+
+			if (!('NDEFReader' in window)) {
+				setStatus('Web NFC nepalaikomas');
+				log('KLAIDA: šiame telefone/naršyklėje nėra NDEFReader');
+				return;
+			}
+
+			stopScan('restart prieš startą');
+			scanEnabled = true;
+			abortController = new AbortController();
+
+			try {
+				reader = new NDEFReader();
+				await reader.scan({ signal: abortController.signal });
+				setStatus('įjungta');
+				log('START: scan aktyvus');
+
+				reader.onreading = function(event) {
+					readCount++;
+					const serial = (event.serialNumber || '').toString();
+					log('READ #' + readCount + ': modalOpen=' + modalOpen + ', scanEnabled=' + scanEnabled + ', serial="' + serial + '"');
+
+					if (modalOpen) {
+						log('IGNORED: modalas atidarytas, NFC laikomas aktyvus, bet nieko nedaro');
+						return;
+					}
+
+					if (!scanEnabled) {
+						log('IGNORED: scan išjungtas');
+						return;
+					}
+
+					if (navigator.vibrate) navigator.vibrate(150);
+				};
+
+				reader.onreadingerror = function(event) {
+					log('READING ERROR ignored: modalOpen=' + modalOpen + ', scanEnabled=' + scanEnabled);
+				};
+			} catch (e) {
+				if (!e || e.name !== 'AbortError') {
+					log('KLAIDA: ' + (e && e.name ? e.name + ': ' : '') + (e && e.message ? e.message : String(e)));
+				}
+				setStatus('išjungta');
+			}
+		}
+
+		function openModal() {
+			modalOpen = true;
+			modalEl.classList.add('open');
+			log('MODAL OPEN: NFC NEABORTINAMAS, tik ignoruojamas. Dabar pridėk kortelę.');
+		}
+
+		function closeModal() {
+			modalOpen = false;
+			modalEl.classList.remove('open');
+			log('MODAL CLOSE');
+			if (!scanEnabled) {
+				startScan();
+			}
+		}
+
+		document.getElementById('startBtn').addEventListener('click', startScan);
+		document.getElementById('stopBtn').addEventListener('click', function(){ stopScan('rankinis mygtukas'); });
+		document.getElementById('modalBtn').addEventListener('click', openModal);
+		document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+		document.getElementById('clearBtn').addEventListener('click', function(){ logEl.textContent = ''; readCount = 0; });
+
+		log('Testas paruoštas. Pirma spausk „Įjungti skenavimą“.');
+	</script>
+</body>
+</html>
