@@ -1,6 +1,6 @@
 
 <div class="form-container form-horizontal">
-	<form action="/admin.php" method="post">
+	<form action="{"/admin.php"|amake_url}" method="post">
 		<input type="hidden" name="module" value="{$module_name}">
 		<input type="hidden" name="action" value="infoAct">
 		<input type="hidden" name="form2[id]" value="{$data.id}" />

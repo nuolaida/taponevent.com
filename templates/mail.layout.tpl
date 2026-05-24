@@ -12,7 +12,7 @@
 			{$body}
 
 			<br/><br/><br/><br/>
-			{if $logo_image_file}<div style="text-align: center;"><a href="{$website_url}"><img src="cid:logo" border="0" alt="" /></a></div>{/if}
+			{if $logo_image_file}<div style="text-align: center;"><a href="{$website_url}"><img src="cid:logo" border="0" alt="" width="200" style="display: inline-block; width: 200px; max-width: 200px; height: auto;" /></a></div>{/if}
 		</td>
 	</tr>
 </table>

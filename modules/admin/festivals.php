@@ -93,11 +93,93 @@
 			
 			$list_companies = $Festivals->get_companies_list(0, 1000, ['festival' => $data['id']]);
 			$smarty->assign('list_companies', $list_companies);
+
+			$default_sales_from = ((int)($data['time_starts'] ?? 0)) ? date('Y-m-d', (int)$data['time_starts']) : date('Y-m-d');
+			$default_sales_till = ((int)($data['time_ends'] ?? 0)) ? date('Y-m-d', (int)$data['time_ends']) : $default_sales_from;
+			$sales_from = trim((string)($url['sales_from'] ?? $default_sales_from));
+			$sales_till = trim((string)($url['sales_till'] ?? $default_sales_till));
+			$sales_time_from = strtotime($sales_from . ' 00:00:00');
+			$sales_time_till = strtotime($sales_till . ' 23:59:59');
+			if (!$sales_time_from) {
+				$sales_from = date('Y-m-d');
+				$sales_time_from = strtotime($sales_from . ' 00:00:00');
+			}
+			if (!$sales_time_till) {
+				$sales_till = $sales_from;
+				$sales_time_till = strtotime($sales_till . ' 23:59:59');
+			}
+			if ($sales_time_from > $sales_time_till) {
+				$tmp_time = $sales_time_from;
+				$sales_time_from = $sales_time_till;
+				$sales_time_till = $tmp_time;
+				$tmp_date = $sales_from;
+				$sales_from = $sales_till;
+				$sales_till = $tmp_date;
+			}
+			$list_companies_sales = $Festivals->get_companies_sales_ranking($data['id'], $sales_time_from, $sales_time_till);
+			$list_products_sales = $Festivals->get_products_sales_ranking($data['id'], $sales_time_from, $sales_time_till, 30);
+			$smarty->assign('sales_from', $sales_from);
+			$smarty->assign('sales_till', $sales_till);
+			$smarty->assign('list_companies_sales', $list_companies_sales);
+			$smarty->assign('list_products_sales', $list_products_sales);
 			
 			$smarty->assign('language_active', $Translate->language);
 			
 			$title[] = ['title' => $data['title'], 'link' => '?module=' . $module_name . '&action=view&id=' . $data['id']];
 			break;
+
+		case 'companiesSalesExport':
+			$data = $Festivals->get_festivals_item($url['id']);
+			if (!$data) {
+				Location($_SERVER['HTTP_REFERER']);
+				die();
+			}
+
+			$default_sales_from = ((int)($data['time_starts'] ?? 0)) ? date('Y-m-d', (int)$data['time_starts']) : date('Y-m-d');
+			$default_sales_till = ((int)($data['time_ends'] ?? 0)) ? date('Y-m-d', (int)$data['time_ends']) : $default_sales_from;
+			$sales_from = trim((string)($url['sales_from'] ?? $default_sales_from));
+			$sales_till = trim((string)($url['sales_till'] ?? $default_sales_till));
+			$sales_time_from = strtotime($sales_from . ' 00:00:00');
+			$sales_time_till = strtotime($sales_till . ' 23:59:59');
+			if (!$sales_time_from) {
+				$sales_from = $default_sales_from;
+				$sales_time_from = strtotime($sales_from . ' 00:00:00');
+			}
+			if (!$sales_time_till) {
+				$sales_till = $default_sales_till;
+				$sales_time_till = strtotime($sales_till . ' 23:59:59');
+			}
+			if ($sales_time_from > $sales_time_till) {
+				$tmp_time = $sales_time_from;
+				$sales_time_from = $sales_time_till;
+				$sales_time_till = $tmp_time;
+				$tmp_date = $sales_from;
+				$sales_from = $sales_till;
+				$sales_till = $tmp_date;
+			}
+
+			$list_companies_sales = $Festivals->get_companies_sales_ranking($data['id'], $sales_time_from, $sales_time_till);
+			$filename = 'sales-by-sellers-' . (int)$data['id'] . '-' . $sales_from . '-' . $sales_till . '.csv';
+
+			header('Content-Type: text/csv; charset=utf-8');
+			header('Content-Disposition: attachment; filename="' . $filename . '"');
+			header('Pragma: no-cache');
+			header('Expires: 0');
+
+			echo "\xEF\xBB\xBF";
+			$output = fopen('php://output', 'w');
+			fputcsv($output, ['Seller', 'Incomes', '25%', '10%'], ';');
+			foreach ($list_companies_sales as $item) {
+				$incomes_total = (float)$item['incomes_total'];
+				fputcsv($output, [
+					$item['title'],
+					number_format($incomes_total, 2, '.', ''),
+					number_format($incomes_total * 0.25, 2, '.', ''),
+					number_format($incomes_total * 0.10, 2, '.', ''),
+				], ';');
+			}
+			fclose($output);
+			die();
 		
 
 		case 'companiesInfo':
@@ -173,6 +255,38 @@
 			
 			$list_prices = $Festivals->get_prices_list_by_company($data_companies['id']);
 			$smarty->assign('list_prices', $list_prices);
+
+			$default_sales_from = ((int)($data_festivals['time_starts'] ?? 0)) ? date('Y-m-d', (int)$data_festivals['time_starts']) : date('Y-m-d');
+			$default_sales_till = ((int)($data_festivals['time_ends'] ?? 0)) ? date('Y-m-d', (int)$data_festivals['time_ends']) : $default_sales_from;
+			$sales_from = trim((string)($url['sales_from'] ?? $default_sales_from));
+			$sales_till = trim((string)($url['sales_till'] ?? $default_sales_till));
+			$sales_time_from = strtotime($sales_from . ' 00:00:00');
+			$sales_time_till = strtotime($sales_till . ' 23:59:59');
+			if (!$sales_time_from) {
+				$sales_from = $default_sales_from;
+				$sales_time_from = strtotime($sales_from . ' 00:00:00');
+			}
+			if (!$sales_time_till) {
+				$sales_till = $default_sales_till;
+				$sales_time_till = strtotime($sales_till . ' 23:59:59');
+			}
+			if ($sales_time_from > $sales_time_till) {
+				$tmp_time = $sales_time_from;
+				$sales_time_from = $sales_time_till;
+				$sales_time_till = $tmp_time;
+				$tmp_date = $sales_from;
+				$sales_from = $sales_till;
+				$sales_till = $tmp_date;
+			}
+			$list_company_products_sales = $Festivals->get_company_products_sales($data_companies['id'], $data_festivals['id'], $sales_time_from, $sales_time_till, $Translate->get_item('custom price'));
+			$list_company_users_sales = $Festivals->get_company_users_sales($data_companies['id'], $data_festivals['id'], $sales_time_from, $sales_time_till);
+			if (count($list_company_users_sales) <= 1) {
+				$list_company_users_sales = [];
+			}
+			$smarty->assign('sales_from', $sales_from);
+			$smarty->assign('sales_till', $sales_till);
+			$smarty->assign('list_company_products_sales', $list_company_products_sales);
+			$smarty->assign('list_company_users_sales', $list_company_users_sales);
 			
 			$smarty->assign('language_active', $Translate->language);
 			
@@ -180,6 +294,70 @@
 			$title[] = $Translate->get_item('companies');
 			$title[] = ['title' => $data_companies['title'], 'link' => '?module=' . $module_name . '&action=companiesView&id=' . $data_companies['id']];
 			break;
+
+		case 'companiesSalesEmail':
+			$data_companies = $Festivals->get_companies_item($url['id']);
+			if (!$data_companies) {
+				Location($_SERVER['HTTP_REFERER']);
+				die();
+			}
+			$data_festivals = $Festivals->get_festivals_item($data_companies['festival_id']);
+			$default_sales_from = ((int)($data_festivals['time_starts'] ?? 0)) ? date('Y-m-d', (int)$data_festivals['time_starts']) : date('Y-m-d');
+			$default_sales_till = ((int)($data_festivals['time_ends'] ?? 0)) ? date('Y-m-d', (int)$data_festivals['time_ends']) : $default_sales_from;
+			$sales_from = trim((string)($url['sales_from'] ?? $default_sales_from));
+			$sales_till = trim((string)($url['sales_till'] ?? $default_sales_till));
+			$sales_time_from = strtotime($sales_from . ' 00:00:00');
+			$sales_time_till = strtotime($sales_till . ' 23:59:59');
+			if (!$sales_time_from) {
+				$sales_from = $default_sales_from;
+				$sales_time_from = strtotime($sales_from . ' 00:00:00');
+			}
+			if (!$sales_time_till) {
+				$sales_till = $default_sales_till;
+				$sales_time_till = strtotime($sales_till . ' 23:59:59');
+			}
+			if ($sales_time_from > $sales_time_till) {
+				$tmp_time = $sales_time_from;
+				$sales_time_from = $sales_time_till;
+				$sales_time_till = $tmp_time;
+				$tmp_date = $sales_from;
+				$sales_from = $sales_till;
+				$sales_till = $tmp_date;
+			}
+
+			$list_users = $Festivals->get_users_list_by_company($data_companies['id']);
+			$list_company_products_sales = $Festivals->get_company_products_sales($data_companies['id'], $data_festivals['id'], $sales_time_from, $sales_time_till, $Translate->get_item('custom price'));
+			$list_company_daily_sales = $Festivals->get_company_daily_sales($data_companies['id'], $data_festivals['id'], $sales_time_from, $sales_time_till);
+			$list_company_users_sales = $Festivals->get_company_users_sales($data_companies['id'], $data_festivals['id'], $sales_time_from, $sales_time_till);
+			if (count($list_company_users_sales) <= 1) {
+				$list_company_users_sales = [];
+			}
+			$total_sales = 0;
+			foreach ($list_company_daily_sales as $item_daily_sales) {
+				$total_sales += (float)$item_daily_sales['incomes_total'];
+			}
+
+			$smarty->assign('data_companies', $data_companies);
+			$smarty->assign('data_festivals', $data_festivals);
+			$smarty->assign('sales_from', $sales_from);
+			$smarty->assign('sales_till', $sales_till);
+			$smarty->assign('total_sales', $total_sales);
+			$smarty->assign('list_users', $list_users);
+			$smarty->assign('list_company_products_sales', $list_company_products_sales);
+			$smarty->assign('list_company_daily_sales', $list_company_daily_sales);
+			$smarty->assign('list_company_users_sales', $list_company_users_sales);
+
+			$body_html = my_fetch('festivals.companies.view.mail.tpl');
+			$email_params = [
+				'subject' => $Translate->get_item('sales report') . ' - ' . $data_companies['title'],
+				'to' => ['nuolaida@gmail.com'],
+				'body_html' => $body_html,
+			];
+			mail_customize_smtp($email_params);
+			$_SESSION['main_messages'][] = $Translate->get_item('success email sent');
+
+			Location('?module=' . $module_name . '&action=companiesView&id=' . $data_companies['id'] . '&sales_from=' . urlencode($sales_from) . '&sales_till=' . urlencode($sales_till));
+			die();
 		
 		
 		case 'usersInfo':

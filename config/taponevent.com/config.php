@@ -5,13 +5,13 @@
 	    'protocol' => 'https',
 	    'domain' => 'taponevent.com',
 	    'email'						=>	[
-	        'from_name'		=>	'VAF - Vilnius Beer Festival',
-	        'from_email'	=>	'info@vafest.lt',
+	        'from_name'		=>	'Tap On Event',
+	        'from_email'	=>	'info@taponevent.com',
 	        'use_smtp'		=>	[
 	            'host'		=>	'ceres.hosty.lt',
 	            'port'		=>	465,
 	            'secure'	=>	'ssl',
-	            'username'	=>	'info@vafest.lt',
+	            'username'	=>	'info@taponevent.com',
 	        ],
 	        'logo_file'	=>	SERVER_PATH . 'config/taponevent.com/email_logo.png',
 	    ],

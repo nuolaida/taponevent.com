@@ -31,8 +31,81 @@
 			<tr{if !$item.is_active} class="inactive"{/if}>
 				<td><a href="?module={$module_name}&action=companiesView&id={$item.id}">{$item.title}</a></td>
 				<td>{$item.users_total}</td>
-				<td><a href="?module={$module_name}&action=companiesCheckout&company_id={$item.id}">{$item.incomes_total}</a></td>
+				<td>{$item.incomes_total}</td>
 			</tr>
 	    {/foreach}
+	</tbody>
+</table>
+
+<br /><br /><br />
+<form action="{"/admin.php"|amake_url}" method="get" class="form-inline" style="margin-bottom: 20px; padding: 15px; border: 1px solid #d9dee7; background: #f8fafc;">
+	<input type="hidden" name="module" value="{$module_name}">
+	<input type="hidden" name="action" value="view">
+	<input type="hidden" name="id" value="{$data.id}">
+
+	<label>
+		{"from"|translate}
+		<input type="date" name="sales_from" value="{$sales_from|escape:'html'}">
+	</label>
+	<label style="margin-left: 10px;">
+		{"till"|translate}
+		<input type="date" name="sales_till" value="{$sales_till|escape:'html'}">
+	</label>
+	<button type="submit" class="btn-submit" style="margin-left: 10px;">{"show"|translate}</button>
+</form>
+
+<h3>
+	{"sales by sellers"|translate}
+	<a href="?module={$module_name}&action=companiesSalesExport&id={$data.id}&sales_from={$sales_from|escape:'url'}&sales_till={$sales_till|escape:'url'}" title="{"export sales by sellers"|translate}"><i class="material-icons">table_chart</i></a>
+</h3>
+<table class="tbl_list">
+	<thead>
+	<tr>
+		<td>{"title"|translate}</td>
+		<td>{"receipts"|translate}</td>
+		<td>{"quantity"|translate}</td>
+		<td>{"incomes"|translate}</td>
+	</tr>
+	</thead>
+	<tbody>
+	{foreach $list_companies_sales as $item}
+		<tr>
+			<td><a href="?module={$module_name}&action=companiesView&id={$item.id}">{$item.title}</a></td>
+			<td>{$item.receipts}</td>
+			<td>{$item.quantity}</td>
+			<td>{$item.incomes_total|string_format:"%.2f"}</td>
+		</tr>
+	{foreachelse}
+		<tr>
+			<td colspan="4">{"no sales for selected period"|translate}</td>
+		</tr>
+	{/foreach}
+	</tbody>
+</table>
+
+<br /><br /><br />
+<h3>{"top selling products"|translate}</h3>
+<table class="tbl_list">
+	<thead>
+	<tr>
+		<td>{"title"|translate}</td>
+		<td>{"companies"|translate}</td>
+		<td>{"quantity"|translate}</td>
+		<td>{"incomes"|translate}</td>
+	</tr>
+	</thead>
+	<tbody>
+	{foreach $list_products_sales as $item}
+		<tr>
+			<td>{$item.title}</td>
+			<td><a href="?module={$module_name}&action=companiesView&id={$item.company_id}">{$item.company_title}</a></td>
+			<td>{$item.quantity}</td>
+			<td>{$item.incomes_total|string_format:"%.2f"}</td>
+		</tr>
+	{foreachelse}
+		<tr>
+			<td colspan="4">{"no product sales for selected period"|translate}</td>
+		</tr>
+	{/foreach}
 	</tbody>
 </table>
