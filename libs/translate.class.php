@@ -20,6 +20,8 @@
 		
 		function load_translations() {
 			global $page_special_config;
+
+			$this->keywords = [];
 			
 			$words_path = TRANSLATIONS_PATH;
 			$words_path .= ($this->language && file_exists($words_path . $this->language)) ? $this->language : $this->language_default;
