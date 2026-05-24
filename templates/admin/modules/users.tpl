@@ -17,6 +17,7 @@
 	<thead>
 	<tr>
 		<td>{"email"|translate}</td>
+		<td>{"administrator"|translate}</td>
 		<td class="actions"></td>
 	</tr>
 	</thead>
@@ -24,6 +25,7 @@
 	{foreach from=$list item=item}
 		<tr{if !$item.is_active} class="inactive"{/if}>
 			<td>{$item.email}</td>
+			<td>{if $item.admin}<i class="material-icons">admin_panel_settings</i>{/if}</td>
 			<td>
 				<a href="?module={$module_name}&action=info&id={$item.id}"><i class="material-icons">edit</i></a>
 			</td>

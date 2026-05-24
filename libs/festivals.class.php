@@ -294,7 +294,12 @@ class Festivals {
 				SELECT FP.*
 				FROM festivals_users_companies_prices FP
 				WHERE FP.company_id = :company_id
-				ORDER BY FP.price ASC
+				ORDER BY
+				    CASE
+    					WHEN FP.title REGEXP '^[[:alnum:]]' THEN 0
+    					ELSE 1
+  					END,
+				    FP.title ASC
 			";
 		
 		return execute_sql_query($sql, 'get all', $sql_params);
@@ -303,21 +308,24 @@ class Festivals {
 	
 	function get_prices_item($id, $festival_id=false)
 	{
-		$festival_id = ((int)$festival_id) ?: $_SESSION['app']['festival'];
-		if (!$festival_id) {
-			return false;
-		}
-		$slq_params = [
+		$festival_id = ((int)$festival_id) ?: (int)($_SESSION['app']['festival'] ?? 0);
+		$sql_params = [
 			'price_id' => $id,
-			'festival_id' => $festival_id,
 		];
+		$where = [
+			'FP.id = :price_id',
+		];
+		if ($festival_id) {
+			$sql_params['festival_id'] = $festival_id;
+			$where[] = 'FC.festival_id = :festival_id';
+		}
 		$sql = "
 			SELECT FP.*, FC.title AS company_title
 			FROM festivals_users_companies_prices FP
 			LEFT JOIN festivals_users_companies FC ON FP.company_id = FC.id
-			WHERE FP.id = :price_id AND FC.festival_id = :festival_id
+			WHERE " . implode(' AND ', $where) . "
 		";
-		return execute_sql_query($sql, 'get row', $slq_params);
+		return execute_sql_query($sql, 'get row', $sql_params);
 	}
 	
 	
@@ -469,7 +477,12 @@ class Festivals {
 				LEFT JOIN festivals_users_companies FC ON FP.company_id = FC.id AND FC.festival_id = " . (int)$festival_id . "
 				LEFT JOIN festivals_users_companies_users FU ON FU.company_id = FC.id AND FU.user_id = " . (int)$user_id . "
 				WHERE FC.festival_id = " . (int)$festival_id . " AND FU.user_id = " . (int)$user_id . "
-				ORDER BY FP.price ASC
+				ORDER BY
+				    CASE
+    					WHEN FP.title REGEXP '^[[:alnum:]]' THEN 0
+    					ELSE 1
+  					END,
+				    FP.title ASC
 			";
 		return execute_sql_query($sql, 'get all');
 	}
@@ -608,6 +621,22 @@ class Festivals {
 		$total_price = (float)$res; // this is negative for purchases
 		// if the recent total equals -$total (within small epsilon), treat as duplicate
 		return (abs($total_price + (float)$total) < 0.001);
+	}
+
+	function check_recent_topup_by_nfc($nfc_id, $user_id, $total, $time_to_check = 5)
+	{
+		$nfc = addslashes((string)$nfc_id);
+		$uid = (int)$user_id;
+		$sql = "
+			SELECT SUM(price) AS total_price
+			FROM festivals_checkout CKT
+			WHERE CKT.nfc_id = '" . $nfc . "' AND CKT.user_id = " . $uid . "
+				AND CKT.rec_time > " . (time() - (int)$time_to_check) . "
+		";
+		$res = execute_sql_query($sql, 'get one');
+		if ($res === false || $res === null) return false;
+		$total_price = (float)$res;
+		return (abs($total_price - (float)$total) < 0.001);
 	}
 	
 }

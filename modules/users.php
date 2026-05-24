@@ -5,15 +5,25 @@
 	$module_name = 'users';
 	$smarty->assign('module_name', $module_name);
 
+	if (!function_exists('users_safe_redirect_url')) {
+		function users_safe_redirect_url($url, $fallback = '/') {
+			$url = trim((string)$url);
+			if (!$url || substr($url, 0, 1) !== '/' || substr($url, 0, 2) === '//') {
+				return $fallback;
+			}
+			return $url;
+		}
+	}
+
 	switch ($url['_action_']) {
 	
 	    // Login
 	    case 'login':
 	
-	        $redirect_to = $_SERVER['HTTP_REFERER'];
+	        $redirect_to = users_safe_redirect_url($_SERVER['HTTP_REFERER'] ?? '', '/');
 	        $success = false;
 	
-	        $smarty->assign('ref_url', $_SERVER['HTTP_REFERER']);
+	        $smarty->assign('ref_url', users_safe_redirect_url($url['ref_url'] ?? ($_SERVER['HTTP_REFERER'] ?? ''), ''));
 	
 	        if (trim($url['email']) && trim($url['password'])) {
 	            $data = $Users->get_item_email($url['email']);
@@ -47,12 +57,12 @@
 	
 	        if ($success) {
 	            if ($url['ref_url']) {
-	                $redirect_to = $url['ref_url'];
+	                $redirect_to = users_safe_redirect_url($url['ref_url'], $redirect_to);
 	            }
 	        }
 	        else {
 	            if ($url['ref_url']) {
-	                $_SESSION['ref_url'] = $url['ref_url'];
+	                $_SESSION['ref_url'] = users_safe_redirect_url($url['ref_url'], '');
 	            }
 	        }
 	
@@ -93,6 +103,11 @@
 	        if ($ajax) {
 	            $syspage['popup'] = true;
 	        }
+	        $ref_url = users_safe_redirect_url($url['ref_url'] ?? ($_SESSION['ref_url'] ?? ''), '');
+	        if ($ref_url) {
+		        $_SESSION['ref_url'] = $ref_url;
+	        }
+	        $smarty->assign('ref_url', $ref_url);
 	
 	        if (!$_SESSION['user']['id']) {
 	            // Page description

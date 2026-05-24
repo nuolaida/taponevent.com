@@ -69,9 +69,11 @@
 				}
 				
 				if ($oki) {
+					d();
 					$user_id = $data['id'];
 					$Users->update_item($user_id, $form);
 					$Users->delete_rights_user($data['id']);
+					die();
 				}
 
 			} else {

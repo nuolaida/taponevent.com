@@ -45,20 +45,22 @@
             });
         });
 
-        // NFC & scan logic (unchanged)
+        // NFC & scan logic
         $(document).ready(function() {
             const url = window.location.href;
 
             if ('NDEFReader' in window) {
                 // Jei esame darbo lange - skenuojame normaliai
                 if (url.includes('action=work')) {
-                    startNfcScanning();
+                    initNfcScanning();
                 }
                     // VISUOSE KITUOSE puslapiuose (Ok, Error ir t.t.)
                 // paleidžiame "tylųjį" skenavimą, kad Android sistema nesikištų
                 else {
-                    keepNfcBusy();
+                    keepNfcBusyIfAllowed();
                 }
+            } else if (url.includes('action=work')) {
+                showNfcEnablePrompt('NFC skenavimui reikia Android telefono su Chrome ir įjungtu NFC.');
             }
         });
 
@@ -121,58 +123,274 @@
 
         // Global NFC scan controller + re-arm timer for repeated scans
         let nfcAbortController = null;
+        let nfcAbortControllers = [];
         let nfcRearmTimer = null;
+        let nfcScanActive = false;
+        let nfcScanStarting = false;
+        let nfcReader = null;
+        let nfcLastRead = { tag: null, ts: 0 };
+        let nfcReadLocked = false;
+        let nfcPaused = false;
+        const nfcDuplicateGapMs = 10000;
 
-        async function startNfcScanning() {
-            if (nfcAbortController) nfcAbortController.abort();
-            nfcAbortController = new AbortController();
+        function registerNfcAbortController(controller) {
+            nfcAbortController = controller;
+            nfcAbortControllers.push(controller);
+            nfcAbortControllers = nfcAbortControllers.filter(function(item) {
+                return item && !item.signal.aborted;
+            });
+        }
+
+        function abortAllNfcReaders() {
+            nfcAbortControllers.forEach(function(controller) {
+                try { controller.abort(); } catch(e) {}
+            });
+            nfcAbortControllers = [];
+            if (nfcAbortController) {
+                try { nfcAbortController.abort(); } catch(e) {}
+                nfcAbortController = null;
+            }
+            if (nfcReader) {
+                try { nfcReader.onreading = null; } catch(e) {}
+                nfcReader = null;
+            }
+        }
+
+        function isScanResultOpen() {
+            const modal = document.getElementById('scanResultModal');
+            return !!(window._nfcHardPaused || window._nfcModalOpen || document.body.classList.contains('nfc-modal-open') || (modal && modal.classList && modal.classList.contains('open')));
+        }
+
+        async function getNfcPermissionState() {
+            if (!navigator.permissions || !navigator.permissions.query) return null;
+
+            try {
+                const status = await navigator.permissions.query({ name: 'nfc' });
+                return status && status.state ? status.state : null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function showNfcEnablePrompt(message) {
+            let panel = document.getElementById('nfc-enable-panel');
+            if (!panel) {
+                panel = document.createElement('div');
+                panel.id = 'nfc-enable-panel';
+                panel.className = 'nfc-enable-panel';
+                panel.innerHTML = '<div class="nfc-enable-text"></div><button type="button" class="nfc-enable-button">Įjungti NFC skenavimą</button>';
+                document.body.appendChild(panel);
+
+                const button = panel.querySelector('.nfc-enable-button');
+                if (button) {
+                    button.addEventListener('click', function() {
+                        startNfcScanning({ userInitiated: true });
+                    });
+                }
+            }
+
+            const text = panel.querySelector('.nfc-enable-text');
+            if (text) {
+                text.textContent = message || 'NFC skenavimas išjungtas. Paspauskite „Įjungti“ ir patvirtinkite Chrome leidimą.';
+            }
+
+            panel.hidden = false;
+        }
+
+        function getNfcStartErrorMessage(error) {
+            const name = error && error.name ? error.name : '';
+
+            if (!window.isSecureContext) {
+                return 'NFC skenavimui reikia HTTPS. Per paprastą HTTP telefone neveiks.';
+            }
+            if (!('NDEFReader' in window)) {
+                return 'Ši naršyklė nepalaiko NFC skenavimo. Naudokite Android Chrome.';
+            }
+
+            switch (name) {
+                case 'NotAllowedError':
+                    return 'Chrome neleido įjungti NFC. Paspauskite „Įjungti“ ir suteikite leidimą Chrome lange.';
+                case 'NotSupportedError':
+                    return 'Šis telefonas arba naršyklė nepalaiko Web NFC.';
+                case 'NotReadableError':
+                    return 'NFC nepasileido. Patikrinkite, ar telefone įjungtas NFC.';
+                case 'SecurityError':
+                    return 'NFC blokuojamas dėl puslapio saugumo. Atidarykite per HTTPS ir bandykite dar kartą.';
+                case 'InvalidStateError':
+                    return 'NFC skeneris šiuo metu nepasiekiamas. Įjunkite NFC telefone arba perkraukite Chrome.';
+                default:
+                    return 'Nepavyko įjungti NFC skenavimo. Patikrinkite NFC nustatymus telefone ir bandykite dar kartą.';
+            }
+        }
+
+        function hideNfcEnablePrompt() {
+            const panel = document.getElementById('nfc-enable-panel');
+            if (panel) panel.hidden = true;
+        }
+
+        function setNfcEnabledFlag(isEnabled) {
+            try {
+                if (isEnabled) {
+                    window.localStorage.setItem('tapNfcEnabled', '1');
+                } else {
+                    window.localStorage.removeItem('tapNfcEnabled');
+                }
+            } catch (e) {}
+        }
+
+        function wasNfcEnabledBefore() {
+            try {
+                return window.localStorage.getItem('tapNfcEnabled') === '1';
+            } catch (e) {
+                return false;
+            }
+        }
+
+        async function initNfcScanning() {
+            const state = await getNfcPermissionState();
+
+            if (state === 'granted' || wasNfcEnabledBefore()) {
+                startNfcScanning();
+                return;
+            }
+
+            showNfcEnablePrompt('NFC skenavimas neįjungtas. Paspauskite „Įjungti“ ir patvirtinkite Chrome leidimą.');
+        }
+
+        async function startNfcScanning(options) {
+            if (nfcPaused || isScanResultOpen()) {
+                showNfcEnablePrompt('NFC skenavimas laikinai sustabdytas, kol rodomas rezultato langas.');
+                return;
+            }
+            if (nfcScanActive && nfcReader) {
+                hideNfcEnablePrompt();
+                return;
+            }
+            if (nfcScanStarting) {
+                showNfcEnablePrompt('NFC skenavimas jungiamas. Palaukite Chrome leidimo lango.');
+                return;
+            }
+            nfcScanStarting = true;
+            options = options || {};
+
+            if (options.userInitiated) {
+                showNfcEnablePrompt('Jungiamas NFC skenavimas. Jei Chrome prašo leidimo, paspauskite „Leisti“.');
+            }
+
+            registerNfcAbortController(new AbortController());
 
             try {
                 const ndef = new NDEFReader();
+                nfcReader = ndef;
                 // Naudojame signalą, bet NE pridedame jokių papildomų skenavimų klaidų puslapiuose
                 await ndef.scan({ signal: nfcAbortController.signal });
+                nfcScanActive = true;
+                setNfcEnabledFlag(true);
+                hideNfcEnablePrompt();
+
+                nfcReadLocked = false;
 
                 ndef.onreading = event => {
-                    const nfcId = event.serialNumber;
-                    if (navigator.vibrate) navigator.vibrate(200);
-
-                    // Stop current reader immediately to avoid duplicate events while card is still held.
-                    if (nfcAbortController) nfcAbortController.abort();
-
-                    if (typeof window.processNFC === 'function' && nfcId) {
-                        window.processNFC(nfcId);
+                    if (isScanResultOpen()) {
+                        try { console.log('Ignored NFC read while result modal is open'); } catch(e) {}
+                        return;
                     }
 
-                    // Re-arm scanner so subsequent scans work after the current read cycle.
+                    const nfcId = (event.serialNumber || '').toString().trim();
+                    const isEmptyTag = !nfcId || /^empty\s*tag$/i.test(nfcId) || /empty\s*tag/i.test(nfcId);
+
+                    if (isEmptyTag) {
+                        try { console.warn('Ignored empty NFC read'); } catch(e) {}
+                    } else {
+                        if (navigator.vibrate) navigator.vibrate(200);
+
+                        if (typeof window.processNFC === 'function') {
+                            window.processNFC(nfcId);
+                        }
+                    }
+
+                    // Re-arm only after the result modal is closed or by an explicit restart.
                     if (nfcRearmTimer) clearTimeout(nfcRearmTimer);
-                    nfcRearmTimer = setTimeout(function() {
-                        startNfcScanning();
-                    }, 700);
                 };
-            } catch (e) { console.error(e); }
+
+                ndef.onreadingerror = event => {
+                    try { console.log('Ignored NFC reading error', event); } catch(e) {}
+                };
+            } catch (e) {
+                nfcScanActive = false;
+
+                if (!e || e.name !== 'AbortError') {
+                    console.error(e);
+                    const permissionState = await getNfcPermissionState();
+                    if (permissionState === 'denied' || (e && e.name === 'NotAllowedError')) {
+                        setNfcEnabledFlag(false);
+                        showNfcEnablePrompt(getNfcStartErrorMessage(e));
+                    } else {
+                        showNfcEnablePrompt(getNfcStartErrorMessage(e));
+                    }
+                }
+            } finally {
+                nfcScanStarting = false;
+            }
         }
 
         // Ši funkcija "pasisavina" NFC, kol vartotojas laiko kortelę pridėtą
         async function keepNfcBusy() {
+            if (nfcPaused || isScanResultOpen()) return;
+            if (nfcReader) {
+                try { nfcReader.onreading = null; } catch(e) {}
+                nfcReader = null;
+            }
+            if (nfcAbortController) nfcAbortController.abort();
+            registerNfcAbortController(new AbortController());
+
             try {
                 const ndef = new NDEFReader();
+                nfcReader = ndef;
                 // Skenuojame be signalo - tai laikys NFC užimtą visą laiką, kol matomas šis puslapis
-                await ndef.scan();
+                await ndef.scan({ signal: nfcAbortController.signal });
                 ndef.onreading = () => { /* Ignoruojam */ };
             } catch (e) { }
         }
 
         // Funkcija, kurią gali iškviesti kiti šablonai
+        async function keepNfcBusyIfAllowed() {
+            const state = await getNfcPermissionState();
+            if (state === 'granted') {
+                keepNfcBusy();
+            }
+        }
+
         function stopNfcScanning() {
+            nfcPaused = true;
             if (nfcRearmTimer) {
                 clearTimeout(nfcRearmTimer);
                 nfcRearmTimer = null;
             }
-            if (nfcAbortController) {
-                nfcAbortController.abort();
-                nfcAbortController = null;
+            nfcReadLocked = true;
+        }
+
+        window.stopNfcScanning = stopNfcScanning;
+
+        function resumeNfcScanning() {
+            nfcPaused = false;
+            nfcReadLocked = false;
+            window._nfcHardPaused = false;
+        }
+
+        window.resumeNfcScanning = resumeNfcScanning;
+
+        function restartNfcScanning() {
+            const url = window.location.href;
+            if (isScanResultOpen()) return;
+            resumeNfcScanning();
+            if (nfcScanActive && nfcReader) return;
+            if ('NDEFReader' in window && url.includes('action=work')) {
+                startNfcScanning();
             }
         }
+
+        window.restartNfcScanning = restartNfcScanning;
     </script>
 </head>
 <body>
@@ -265,9 +483,17 @@
 		// track previously focused element so we can restore focus when modal closes
 		var _inertedElems = [];
 		var _previouslyFocused = null;
+		window.isNfcBlockedByModal = function() {
+			var m = document.getElementById('scanResultModal');
+			return !!(window._nfcModalOpen || (m && m.classList && m.classList.contains('open')));
+		};
+
 		function closeModal() {
 			var m = document.getElementById('scanResultModal');
 			if (!m) return;
+			window._nfcHardPaused = false;
+			window._nfcModalOpen = false;
+			document.body.classList.remove('nfc-modal-open');
 			m.classList.remove('open');
 			var content = m.querySelector('.custom-modal-content');
 			if (content) { content.classList.remove('ok'); content.classList.remove('error'); }
@@ -290,6 +516,15 @@
 			// mark modal as hidden for assistive tech (after focus moved/blur)
 			try { m.setAttribute('aria-hidden','true'); } catch(e){}
 			document.body.classList.remove('custom-modal-open');
+			try { window._nfcProcessLockedUntil = 0; } catch(e){}
+			try { window._processingNFC = false; } catch(e){}
+			try { window._lastNFC = { tag: null, ts: 0, requestId: null }; } catch(e){}
+			if (typeof window.resumeNfcScanning === 'function') {
+				window.resumeNfcScanning();
+			}
+			if (typeof window.restartNfcScanning === 'function') {
+				setTimeout(function(){ window.restartNfcScanning(); }, 700);
+			}
 		}
 
 		function bindModalHandlers() {
@@ -309,6 +544,12 @@
 
 		window.showScanResult = function(data){
 			try {
+				window._nfcHardPaused = true;
+				window._nfcModalOpen = true;
+				document.body.classList.add('nfc-modal-open');
+				if (typeof window.stopNfcScanning === 'function') {
+					window.stopNfcScanning();
+				}
 				var m = document.getElementById('scanResultModal');
 				var body = document.getElementById('scanResultBody');
 				if (!m || !body) { alert(data.message || (data.success? 'OK' : 'Error')); return; }
@@ -411,6 +652,23 @@
 
 		// bind once
 		bindModalHandlers();
+
+		function installNfcModalGuard() {
+			if (typeof window.processNFC !== 'function' || window.processNFC._modalGuardInstalled) return;
+			var originalProcessNFC = window.processNFC;
+			window.processNFC = function() {
+				if (typeof window.isNfcBlockedByModal === 'function' && window.isNfcBlockedByModal()) {
+					try { console.log('Blocked NFC because result modal is open'); } catch(e){}
+					return;
+				}
+				return originalProcessNFC.apply(this, arguments);
+			};
+			window.processNFC._modalGuardInstalled = true;
+		}
+
+		installNfcModalGuard();
+		setTimeout(installNfcModalGuard, 0);
+		setTimeout(installNfcModalGuard, 500);
 	})();
 	</script>
 

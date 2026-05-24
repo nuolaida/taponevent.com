@@ -5,6 +5,7 @@
             <form action="/index.php" method="post">
                 <input type="hidden" name="module" value="users" />
                 <input type="hidden" name="action" value="login" />
+                {if $ref_url}<input type="hidden" name="ref_url" value="{$ref_url|escape:'html'}" />{/if}
                 <input type="text" name="email" class="input user_login_input" />
                 <input type="password" name="password" class="input user_login_input" />
                 <input type="submit" value="{"login"|translate}" class="button" />

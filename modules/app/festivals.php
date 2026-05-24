@@ -111,8 +111,23 @@
 				}
 				// Server-side extra protection: detect near-duplicate by nfc_id+total within short window
 				if ($nfc_id && $Festivals->check_recent_total_by_nfc($nfc_id, $_SESSION['user']['id'], $price_total_count, 5)) {
+					$walletNow = $Festivals->get_wallet_item($nfc_id);
+					if ($isAjax) {
+						header('Content-Type: application/json');
+						echo json_encode([
+							'success' => true,
+							'duplicate' => true,
+							'message' => 'OK',
+							'checkout' => (float)$price_total_count,
+							'items' => $price_items,
+							'wallet' => (float)$walletNow,
+							'request_id' => $request_id,
+							'server_time' => time(),
+							'operator' => isset($_SESSION['user']['id']) ? $_SESSION['user']['id'] : null,
+						]);
+						exit;
+					}
 					$msg = $Translate->get_item('error duplicate recent');
-					if ($isAjax) { header('Content-Type: application/json'); echo json_encode(['success'=>false,'duplicate'=>true,'message'=>$msg,'request_id'=>$request_id]); exit; }
 					$_SESSION['main_messages'][] = $msg;
 					Location($_SERVER['HTTP_REFERER'] ?? '/app.php');
 					die();
@@ -328,6 +343,27 @@
 				die();
 			}
 
+			if (!(float)$topup_amount) {
+				// AJAX zero-amount scans are balance checks. Do this before request_id duplicate checks
+				// so an NFC balance read cannot fail just because there is no topup transaction.
+				$wallet = $Festivals->get_wallet_item($nfc_id);
+				if ($isAjax) {
+					header('Content-Type: application/json');
+					echo json_encode([
+						'success' => true,
+						'message' => '',
+						'topup' => 0,
+						'wallet' => (float)$wallet,
+						'request_id' => $request_id,
+					]);
+					exit;
+				}
+				$msg = $Translate->get_item('error empty cart');
+				$_SESSION['main_messages'][] = $msg;
+				Location($_SERVER['HTTP_REFERER'] ?? '/app.php');
+				die();
+			}
+
 			if (!$request_id) {
 				$msg = $Translate->get_item('error request id dublicate');
 				if ($isAjax) { header('Content-Type: application/json'); echo json_encode(['success'=>false,'message'=>$msg]); exit; }
@@ -344,30 +380,30 @@
 				}
 			}
 
-			if (!(float)$topup_amount) {
-				// If topup amount is zero, for AJAX treat as balance-check: return wallet so client can show balance
-				$wallet = $Festivals->get_wallet_item($nfc_id);
-				if ($isAjax) {
-					header('Content-Type: application/json');
-					echo json_encode([
-						'success' => true,
-						'message' => '',
-						'topup' => 0,
-						'wallet' => (float)$wallet,
-						'request_id' => $request_id,
-					]);
-					exit;
-				}
-				// Non-AJAX fallback: keep previous behavior (show message and redirect)
-				$msg = $Translate->get_item('error empty cart');
-				$_SESSION['main_messages'][] = $msg;
-				Location($_SERVER['HTTP_REFERER'] ?? '/app.php');
-				die();
-			}
 			if ((float)$topup_amount > $Festivals->max_topup_ammount) {
 				$msg = $Translate->get_item('error not enough money');
 				if ($isAjax) { header('Content-Type: application/json'); echo json_encode(['success'=>false,'message'=>$msg]); exit; }
 				$_SESSION['main_messages'][] = $msg;
+				Location($_SERVER['HTTP_REFERER'] ?? '/app.php');
+				die();
+			}
+
+			if ($nfc_id && $Festivals->check_recent_topup_by_nfc($nfc_id, $_SESSION['user']['id'], $topup_amount, 5)) {
+				$walletNow = $Festivals->get_wallet_item($nfc_id);
+				if ($isAjax) {
+					header('Content-Type: application/json');
+					echo json_encode([
+						'success' => true,
+						'duplicate' => true,
+						'message' => 'OK',
+						'topup' => (float)$topup_amount,
+						'wallet' => (float)$walletNow,
+						'request_id' => $request_id,
+						'server_time' => time(),
+						'operator' => isset($_SESSION['user']['id']) ? $_SESSION['user']['id'] : null,
+					]);
+					exit;
+				}
 				Location($_SERVER['HTTP_REFERER'] ?? '/app.php');
 				die();
 			}

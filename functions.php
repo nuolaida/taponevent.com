@@ -1483,15 +1483,17 @@ function smarty_modifier_seconds_to_date_format($number, $format=null) {
 		global $adodb;
 		
 		if (is_array($inputarr) && !empty($inputarr)) {
-			preg_match_all('/(?<!:):([a-zA-Z0-9_]+)/', $sql, $matches);
-			$found_placeholders = $matches[1];
-			if (!empty($found_placeholders)) {
-				foreach ($found_placeholders as $placeholder) {
-					$val = isset($inputarr[$placeholder]) ? $inputarr[$placeholder] : "";
-					$safe_val = $adodb->qstr($val);
-					$sql = preg_replace('/:' . $placeholder . '\b/', $safe_val, $sql);
+			$sql = preg_replace_callback('/(?<!:):([a-zA-Z0-9_]+)/', function ($matches) use ($inputarr, $adodb) {
+				$placeholder = $matches[1];
+				$placeholder_with_colon = ':' . $placeholder;
+				if (array_key_exists($placeholder, $inputarr)) {
+					return $adodb->qstr($inputarr[$placeholder]);
 				}
-			}
+				if (array_key_exists($placeholder_with_colon, $inputarr)) {
+					return $adodb->qstr($inputarr[$placeholder_with_colon]);
+				}
+				return $matches[0];
+			}, $sql);
 		}
 		$inputarr = false;
 		$function = strtolower($function);

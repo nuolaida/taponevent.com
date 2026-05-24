@@ -57,7 +57,11 @@
 	if ($_SESSION['user']['admin']) {
 		$id = $_SESSION['user']['id'];
 	} else {
-		Location($dispatch->buildUrl('/index.php?module=users&action=loginForm'));
+		$ref_url = $_SERVER['REQUEST_URI'] ?? '/admin.php';
+		if (!$ref_url || substr($ref_url, 0, 1) !== '/' || substr($ref_url, 0, 2) === '//') {
+			$ref_url = '/admin.php';
+		}
+		Location('/index.php?module=users&action=loginForm&ref_url=' . rawurlencode($ref_url));
 		die();
 	}
 	
