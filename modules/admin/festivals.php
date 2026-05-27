@@ -326,6 +326,31 @@
 			}
 
 			$list_users = $Festivals->get_users_list_by_company($data_companies['id']);
+			$email_to = [];
+			$email_to_used = [];
+			foreach ($list_users as $item_user) {
+				if (!$item_user['is_active']) {
+					continue;
+				}
+				$user_email = trim((string)$item_user['user_email']);
+				if (!filter_var($user_email, FILTER_VALIDATE_EMAIL)) {
+					continue;
+				}
+				$user_email_key = strtolower($user_email);
+				if (isset($email_to_used[$user_email_key])) {
+					continue;
+				}
+				$email_to[] = [
+					'email' => $user_email,
+					'name' => $item_user['user_name'],
+				];
+				$email_to_used[$user_email_key] = true;
+			}
+			if (!$email_to) {
+				$_SESSION['main_messages'][] = $Translate->get_item('error empty required values');
+				Location('?module=' . $module_name . '&action=companiesView&id=' . $data_companies['id'] . '&sales_from=' . urlencode($sales_from) . '&sales_till=' . urlencode($sales_till));
+				die();
+			}
 			$list_company_products_sales = $Festivals->get_company_products_sales($data_companies['id'], $data_festivals['id'], $sales_time_from, $sales_time_till, $Translate->get_item('custom price'));
 			$list_company_daily_sales = $Festivals->get_company_daily_sales($data_companies['id'], $data_festivals['id'], $sales_time_from, $sales_time_till);
 			$list_company_users_sales = $Festivals->get_company_users_sales($data_companies['id'], $data_festivals['id'], $sales_time_from, $sales_time_till);
@@ -350,7 +375,8 @@
 			$body_html = my_fetch('festivals.companies.view.mail.tpl');
 			$email_params = [
 				'subject' => $Translate->get_item('sales report') . ' - ' . $data_companies['title'],
-				'to' => ['nuolaida@gmail.com'],
+				'to' => $email_to,
+				'bcc' => [$page_special_config['email']['from_email']],
 				'body_html' => $body_html,
 			];
 			mail_customize_smtp($email_params);
