@@ -761,6 +761,132 @@ class Festivals {
 			'order' => (count($order)) ? (implode(' AND ', $order)) : '',
 		);
 	}
+
+	function get_nfc_stats($festival_id)
+	{
+		$festival_id = (int)$festival_id;
+		if (!$festival_id) {
+			return [
+				'nfc_total' => 0,
+				'topup_total' => 0,
+				'spent_total' => 0,
+				'unused_total' => 0,
+			];
+		}
+
+		$sql = "
+			SELECT
+				COUNT(DISTINCT CKT.nfc_id) AS nfc_total,
+				SUM(IF(CKT.price > 0, CKT.price, 0)) AS topup_total,
+				SUM(IF(CKT.price < 0, 0 - CKT.price, 0)) AS spent_total,
+				SUM(CKT.price) AS unused_total
+			FROM festivals_checkout CKT
+			WHERE CKT.festival_id = " . $festival_id . "
+				AND CKT.nfc_id IS NOT NULL
+				AND CKT.nfc_id != ''
+		";
+		$data = execute_sql_query($sql, 'get row');
+		if (!$data) {
+			return [
+				'nfc_total' => 0,
+				'topup_total' => 0,
+				'spent_total' => 0,
+				'unused_total' => 0,
+			];
+		}
+
+		$data['nfc_total'] = (int)$data['nfc_total'];
+		$data['topup_total'] = (float)$data['topup_total'];
+		$data['spent_total'] = (float)$data['spent_total'];
+		$data['unused_total'] = (float)$data['unused_total'];
+		return $data;
+	}
+
+	function get_nfc_list($festival_id, $from, $items, $params = [])
+	{
+		$params = $this->get_nfc_list_params($festival_id, $params);
+
+		$sql = "
+			SELECT
+				CKT.nfc_id,
+				SUM(IF(CKT.price > 0, CKT.price, 0)) AS topup_total,
+				SUM(IF(CKT.price < 0, 0 - CKT.price, 0)) AS spent_total
+			FROM festivals_checkout CKT
+			WHERE " . $params['where'] . "
+			GROUP BY CKT.nfc_id
+			ORDER BY topup_total DESC, CKT.nfc_id ASC
+			LIMIT " . (int)$from . ", " . (int)$items . "
+		";
+
+		return execute_sql_query($sql, 'get all', $params['sql_params']);
+	}
+
+	function get_nfc_list_cnt($festival_id, $params = [])
+	{
+		$params = $this->get_nfc_list_params($festival_id, $params);
+
+		$sql = "
+			SELECT COUNT(DISTINCT CKT.nfc_id) AS cnt
+			FROM festivals_checkout CKT
+			WHERE " . $params['where'] . "
+		";
+
+		return execute_sql_query($sql, 'get one', $params['sql_params']);
+	}
+
+	function get_nfc_list_params($festival_id, $params = [])
+	{
+		$where = [
+			"CKT.festival_id = :festival_id",
+			"CKT.nfc_id IS NOT NULL",
+			"CKT.nfc_id != ''",
+		];
+		$sql_params = [
+			'festival_id' => (int)$festival_id,
+		];
+
+		if (trim((string)($params['search'] ?? ''))) {
+			$where[] = "CKT.nfc_id LIKE :search";
+			$sql_params['search'] = '%' . trim((string)$params['search']) . '%';
+		}
+
+		return [
+			'where' => implode(' AND ', $where),
+			'sql_params' => $sql_params,
+		];
+	}
+
+	function get_nfc_log($festival_id, $nfc_id)
+	{
+		$festival_id = (int)$festival_id;
+		$nfc_id = trim((string)$nfc_id);
+		if (!$festival_id || !$nfc_id) {
+			return [];
+		}
+
+		$sql_params = [
+			'festival_id' => $festival_id,
+			'nfc_id' => $nfc_id,
+		];
+		$sql = "
+			SELECT
+				CKT.*,
+				U.name AS user_name,
+				U.email AS user_email,
+				FC.title AS company_title,
+				PRI.title AS price_title
+			FROM festivals_checkout CKT
+			LEFT JOIN users U ON U.id = CKT.user_id
+			LEFT JOIN festivals_users_companies_users FU ON FU.user_id = CKT.user_id
+			LEFT JOIN festivals_users_companies FC ON FC.id = FU.company_id AND FC.festival_id = CKT.festival_id
+			LEFT JOIN festivals_users_companies_prices PRI ON PRI.id = CKT.price_id
+			WHERE CKT.festival_id = :festival_id
+				AND CKT.nfc_id = :nfc_id
+			ORDER BY CKT.rec_time DESC, CKT.id DESC
+		";
+
+		return execute_sql_query($sql, 'get all', $sql_params);
+	}
 	
 	
 	function get_checkout_sum_by_user($user_id, $festival_id)

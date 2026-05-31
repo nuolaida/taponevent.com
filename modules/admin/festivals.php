@@ -118,14 +118,59 @@
 			}
 			$list_companies_sales = $Festivals->get_companies_sales_ranking($data['id'], $sales_time_from, $sales_time_till);
 			$list_products_sales = $Festivals->get_products_sales_ranking($data['id'], $sales_time_from, $sales_time_till, 30);
+			$nfc_stats = $Festivals->get_nfc_stats($data['id']);
 			$smarty->assign('sales_from', $sales_from);
 			$smarty->assign('sales_till', $sales_till);
 			$smarty->assign('list_companies_sales', $list_companies_sales);
 			$smarty->assign('list_products_sales', $list_products_sales);
+			$smarty->assign('nfc_stats', $nfc_stats);
 			
 			$smarty->assign('language_active', $Translate->language);
 			
 			$title[] = ['title' => $data['title'], 'link' => '?module=' . $module_name . '&action=view&id=' . $data['id']];
+			break;
+
+		case 'nfcList':
+			$page = $module_name . ".nfc.list";
+
+			$data = $Festivals->get_festivals_item($url['id']);
+			if (!$data) {
+				Location($_SERVER['HTTP_REFERER']);
+				die();
+			}
+			$search = urldecode((string)$url['search']);
+			$pg = ((int)$url['pg']) ? $url['pg'] : 0;
+			$pg_items = 50;
+			$list = $Festivals->get_nfc_list($data['id'], $pg, $pg_items, ['search' => $search]);
+			$pg_records = $Festivals->get_nfc_list_cnt($data['id'], ['search' => $search]);
+
+			$smarty->assign('data', $data);
+			$smarty->assign('search', $search);
+			$smarty->assign('list', $list);
+			$smarty->assign('paging', $Paging->show($pg, $pg_records, $pg_items, "?module=" . $module_name . "&action=nfcList&id=" . (int)$data['id'] . "&search=" . urlencode($search) . "&pg="));
+
+			$title[] = ['title' => $data['title'], 'link' => '?module=' . $module_name . '&action=view&id=' . $data['id']];
+			$title[] = $Translate->get_item('nfc list');
+			break;
+
+		case 'nfcView':
+			$page = $module_name . ".nfc.view";
+
+			$data = $Festivals->get_festivals_item($url['id']);
+			$nfc_id = trim((string)$url['nfc_id']);
+			if (!$data || !$nfc_id) {
+				Location($_SERVER['HTTP_REFERER']);
+				die();
+			}
+			$list = $Festivals->get_nfc_log($data['id'], $nfc_id);
+
+			$smarty->assign('data', $data);
+			$smarty->assign('nfc_id', $nfc_id);
+			$smarty->assign('list', $list);
+
+			$title[] = ['title' => $data['title'], 'link' => '?module=' . $module_name . '&action=view&id=' . $data['id']];
+			$title[] = ['title' => $Translate->get_item('nfc list'), 'link' => '?module=' . $module_name . '&action=nfcList&id=' . $data['id']];
+			$title[] = $nfc_id;
 			break;
 
 		case 'companiesSalesExport':

@@ -109,3 +109,24 @@
 	{/foreach}
 	</tbody>
 </table>
+
+<br /><br /><br />
+<h3>{"nfc statistics"|translate}</h3>
+<table class="tbl_list">
+	<thead>
+	<tr>
+		<td>{"used nfc cards"|translate}</td>
+		<td>{"topup amount"|translate}</td>
+		<td>{"spent amount"|translate}</td>
+		<td>{"unused amount"|translate}</td>
+	</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td><a href="?module={$module_name}&action=nfcList&id={$data.id}">{$nfc_stats.nfc_total}</a></td>
+			<td>{$nfc_stats.topup_total|string_format:"%.2f"}</td>
+			<td>{$nfc_stats.spent_total|string_format:"%.2f"}</td>
+			<td>{$nfc_stats.unused_total|string_format:"%.2f"}</td>
+		</tr>
+	</tbody>
+</table>
