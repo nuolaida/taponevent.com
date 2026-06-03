@@ -315,6 +315,8 @@
 		case 'cashmachineAct':
 			$nfc_id = $_POST['nfc_id'] ?? $url['nfc_id'] ?? null;
 			$topup_amount = isset($_POST['topup_amount']) ? (float)$_POST['topup_amount'] : (float)($url['topup_amount'] ?? 0);
+			$cash_amount = round($topup_amount, 2);
+			$cash_amount_abs = abs($cash_amount);
 			$request_id = $_POST['request_id'] ?? $url['request_id'] ?? '';
 
 			$isAjax = is_ajax_request();
@@ -343,7 +345,7 @@
 				die();
 			}
 
-			if (!(float)$topup_amount) {
+			if (!$cash_amount) {
 				// AJAX zero-amount scans are balance checks. Do this before request_id duplicate checks
 				// so an NFC balance read cannot fail just because there is no topup transaction.
 				$wallet = $Festivals->get_wallet_item($nfc_id);
@@ -380,7 +382,7 @@
 				}
 			}
 
-			if ((float)$topup_amount > $Festivals->max_topup_ammount) {
+			if ($cash_amount > $Festivals->max_topup_ammount) {
 				$msg = $Translate->get_item('error not enough money');
 				if ($isAjax) { header('Content-Type: application/json'); echo json_encode(['success'=>false,'message'=>$msg]); exit; }
 				$_SESSION['main_messages'][] = $msg;
@@ -388,7 +390,29 @@
 				die();
 			}
 
-			if ($nfc_id && $Festivals->check_recent_topup_by_nfc($nfc_id, $_SESSION['user']['id'], $topup_amount, 5)) {
+			if ($cash_amount < 0) {
+				$wallet = (float)$Festivals->get_wallet_item($nfc_id);
+				if ($wallet < $cash_amount_abs) {
+					$msg = $Translate->get_item('error not enough money');
+					if ($isAjax) {
+						header('Content-Type: application/json');
+						echo json_encode([
+							'success' => false,
+							'message' => $msg,
+							'wallet' => $wallet,
+							'checkout' => $cash_amount_abs,
+							'shortfall' => max(0, round($cash_amount_abs - $wallet, 2)),
+							'request_id' => $request_id,
+						]);
+						exit;
+					}
+					$_SESSION['main_messages'][] = $msg;
+					Location($_SERVER['HTTP_REFERER'] ?? '/app.php');
+					die();
+				}
+			}
+
+			if ($nfc_id && $Festivals->check_recent_topup_by_nfc($nfc_id, $_SESSION['user']['id'], $cash_amount, 5)) {
 				$walletNow = $Festivals->get_wallet_item($nfc_id);
 				if ($isAjax) {
 					header('Content-Type: application/json');
@@ -396,7 +420,8 @@
 						'success' => true,
 						'duplicate' => true,
 						'message' => 'OK',
-						'topup' => (float)$topup_amount,
+						'topup' => ($cash_amount > 0) ? $cash_amount : 0,
+						'checkout' => ($cash_amount < 0) ? $cash_amount_abs : null,
 						'wallet' => (float)$walletNow,
 						'request_id' => $request_id,
 						'server_time' => time(),
@@ -413,7 +438,7 @@
 				'user_id' => (int)$_SESSION['user']['id'],
 				'rec_time' => time(),
 				'nfc_id' => $nfc_id,
-				'price' => (float)$topup_amount,
+				'price' => $cash_amount,
 				'request_id' => $request_id,
 			];
 			$res = $Festivals->add_checkout_item($form5);
@@ -428,7 +453,8 @@
 							'success' => true,
 							'duplicate' => true,
 							'message' => 'OK',
-							'topup' => isset($existing['price']) ? (float)$existing['price'] : $topup_amount,
+							'topup' => (isset($existing['price']) && (float)$existing['price'] > 0) ? (float)$existing['price'] : (($cash_amount > 0) ? $cash_amount : 0),
+							'checkout' => (isset($existing['price']) && (float)$existing['price'] < 0) ? abs((float)$existing['price']) : (($cash_amount < 0) ? $cash_amount_abs : null),
 							'wallet' => (float)$walletNow,
 							'request_id' => $request_id,
 							'transaction_id' => isset($existing['id']) ? $existing['id'] : null,
@@ -458,7 +484,8 @@
 				echo json_encode([
 					'success'=>true,
 					'message'=>'OK',
-					'topup'=>$topup_amount,
+					'topup'=>($cash_amount > 0) ? $cash_amount : 0,
+					'checkout'=>($cash_amount < 0) ? $cash_amount_abs : null,
 					'wallet'=>$wallet,
 					'request_id'=>$request_id,
 					'transaction_id' => $cash_insert_id ?? null,
@@ -468,7 +495,7 @@
 				exit;
 			}
 
-			Location('?module=festivals&action=cashmachineOk&topup=' . $topup_amount . '&wallet=' . $wallet);
+			Location('?module=festivals&action=cashmachineOk&topup=' . $cash_amount . '&wallet=' . $wallet);
 			die();
 			break;
 		

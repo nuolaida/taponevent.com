@@ -163,15 +163,57 @@
 				die();
 			}
 			$list = $Festivals->get_nfc_log($data['id'], $nfc_id);
+			$nfc_balance = $Festivals->get_nfc_balance($data['id'], $nfc_id);
 
 			$smarty->assign('data', $data);
 			$smarty->assign('nfc_id', $nfc_id);
+			$smarty->assign('nfc_balance', $nfc_balance);
 			$smarty->assign('list', $list);
 
 			$title[] = ['title' => $data['title'], 'link' => '?module=' . $module_name . '&action=view&id=' . $data['id']];
 			$title[] = ['title' => $Translate->get_item('nfc list'), 'link' => '?module=' . $module_name . '&action=nfcList&id=' . $data['id']];
 			$title[] = $nfc_id;
 			break;
+
+		case 'nfcAdjustAct':
+			check_permissions($module_name, 'write');
+
+			$data = $Festivals->get_festivals_item($url['id']);
+			$nfc_id = trim((string)$url['nfc_id']);
+			$amount = (float)str_replace(',', '.', (string)$url['amount']);
+			if (!$data || !$nfc_id || !$amount) {
+				$_SESSION['main_messages'][] = $Translate->get_item('error empty required values');
+				Location('?module=' . $module_name . '&action=nfcView&id=' . (int)$url['id'] . '&nfc_id=' . urlencode($nfc_id));
+				die();
+			}
+
+			$nfc_balance = $Festivals->get_nfc_balance($data['id'], $nfc_id);
+			if ($amount < 0 && abs($amount) > $nfc_balance) {
+				$_SESSION['main_messages'][] = $Translate->get_item('error not enough money');
+				Location('?module=' . $module_name . '&action=nfcView&id=' . $data['id'] . '&nfc_id=' . urlencode($nfc_id));
+				die();
+			}
+
+			try {
+				$request_hash = bin2hex(random_bytes(8));
+			} catch (Exception $e) {
+				$request_hash = uniqid('', true);
+			}
+			$form = [
+				'festival_id' => (int)$data['id'],
+				'user_id' => (int)$_SESSION['user']['id'],
+				'rec_time' => time(),
+				'nfc_id' => $nfc_id,
+				'price' => round($amount, 2),
+				'request_id' => 'admin-adjust-' . (int)$data['id'] . '-' . $request_hash,
+			];
+			$res = $Festivals->add_checkout_item($form);
+			if (!is_array($res) || !$res['success']) {
+				$_SESSION['main_messages'][] = $Translate->get_item('error saving data');
+			}
+
+			Location('?module=' . $module_name . '&action=nfcView&id=' . $data['id'] . '&nfc_id=' . urlencode($nfc_id));
+			die();
 
 		case 'companiesSalesExport':
 			$data = $Festivals->get_festivals_item($url['id']);

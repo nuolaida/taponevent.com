@@ -53,6 +53,7 @@
          });
 
          function updateDisplay(val) {
+             val = parseFloat(val) || 0;
              $('#te-total-display').text(val.toFixed(2));
              $('#te-final-amount').val(val.toFixed(2));
          }
@@ -78,7 +79,7 @@
              }
              // If amount is zero, treat this as a balance-check request: still send AJAX to get wallet
              var isBalanceCheck = false;
-             if (amount <= 0) {
+             if (Math.abs(amount) <= 0) {
                  isBalanceCheck = true;
              }
 

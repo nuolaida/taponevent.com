@@ -684,6 +684,17 @@ class Festivals {
 		return (bool)$return;
 	}
 
+	function get_checkout_by_request_id($festival_id, $request_id)
+	{
+		$request_id_esc = addslashes((string)$request_id);
+		$sql = "
+			SELECT CKT.*
+			FROM festivals_checkout CKT
+			WHERE CKT.festival_id = " . (int)$festival_id . " AND CKT.request_id = '" . $request_id_esc . "'
+		";
+		return execute_sql_query($sql, 'get row');
+	}
+
 	
 	function add_checkout_item($form)
 	{
@@ -834,6 +845,28 @@ class Festivals {
 		return execute_sql_query($sql, 'get one', $params['sql_params']);
 	}
 
+	function get_nfc_balance($festival_id, $nfc_id)
+	{
+		$festival_id = (int)$festival_id;
+		$nfc_id = trim((string)$nfc_id);
+		if (!$festival_id || !$nfc_id) {
+			return 0;
+		}
+
+		$sql_params = [
+			'festival_id' => $festival_id,
+			'nfc_id' => $nfc_id,
+		];
+		$sql = "
+			SELECT SUM(CKT.price) AS balance
+			FROM festivals_checkout CKT
+			WHERE CKT.festival_id = :festival_id
+				AND CKT.nfc_id = :nfc_id
+		";
+
+		return (float)execute_sql_query($sql, 'get one', $sql_params);
+	}
+
 	function get_nfc_list_params($festival_id, $params = [])
 	{
 		$where = [
@@ -873,13 +906,18 @@ class Festivals {
 				CKT.*,
 				U.name AS user_name,
 				U.email AS user_email,
-				FC.title AS company_title,
+				COALESCE(PRICE_FC.title, USER_FC.title) AS company_title,
 				PRI.title AS price_title
 			FROM festivals_checkout CKT
 			LEFT JOIN users U ON U.id = CKT.user_id
-			LEFT JOIN festivals_users_companies_users FU ON FU.user_id = CKT.user_id
-			LEFT JOIN festivals_users_companies FC ON FC.id = FU.company_id AND FC.festival_id = CKT.festival_id
 			LEFT JOIN festivals_users_companies_prices PRI ON PRI.id = CKT.price_id
+			LEFT JOIN festivals_users_companies PRICE_FC ON PRICE_FC.id = PRI.company_id
+			LEFT JOIN (
+				SELECT FU.user_id, FC.festival_id, MIN(FC.title) AS title
+				FROM festivals_users_companies_users FU
+				INNER JOIN festivals_users_companies FC ON FC.id = FU.company_id
+				GROUP BY FU.user_id, FC.festival_id
+			) USER_FC ON USER_FC.user_id = CKT.user_id AND USER_FC.festival_id = CKT.festival_id
 			WHERE CKT.festival_id = :festival_id
 				AND CKT.nfc_id = :nfc_id
 			ORDER BY CKT.rec_time DESC, CKT.id DESC
@@ -929,6 +967,21 @@ class Festivals {
 		$total_price = (float)$res; // this is negative for purchases
 		// if the recent total equals -$total (within small epsilon), treat as duplicate
 		return (abs($total_price + (float)$total) < 0.001);
+	}
+
+	function check_recent_topup_by_nfc($nfc_id, $user_id, $total, $time_to_check = 5)
+	{
+		$nfc = addslashes((string)$nfc_id);
+		$uid = (int)$user_id;
+		$sql = "
+			SELECT SUM(price) AS total_price
+			FROM festivals_checkout CKT
+			WHERE CKT.nfc_id = '" . $nfc . "' AND CKT.user_id = " . $uid . "
+				AND CKT.rec_time > " . (time() - (int)$time_to_check) . "
+		";
+		$res = execute_sql_query($sql, 'get one');
+		if ($res === false || $res === null) return false;
+		return (abs((float)$res - (float)$total) < 0.001);
 	}
 	
 }

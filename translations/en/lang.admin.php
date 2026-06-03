@@ -24,6 +24,8 @@ $lang = [
 	'error super admin' => 'The user is Superadmin',
 	'error email duplicate' => 'This email is already in use',
 	'error empty required values' => 'Please fill in all required fields',
+	'error saving data' => 'Could not save data',
+	'error not enough money' => 'Not enough money',
 	'error user not found' => 'User not found',
 	'error user used' => 'This user is already in use',
 	'error time format' => 'Wrong time format',
@@ -70,6 +72,7 @@ $lang = [
 	'no nfc records' => 'No NFC records.',
 	'time' => 'Time',
 	'amount' => 'Amount',
+	'current balance' => 'Current balance',
 	'topup' => 'Top-up',
 	'expense' => 'Expense',
 ];

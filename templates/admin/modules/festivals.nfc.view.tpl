@@ -2,6 +2,25 @@
 	{"nfc log"|translate}: {$nfc_id}
 </h1>
 
+<div style="margin: 15px 0; padding: 15px; border: 1px solid #d9dee7; background: #f8fafc;">
+	<div style="font-size: 18px; margin-bottom: 12px;">
+		{"current balance"|translate}: <strong>{$nfc_balance|string_format:"%.2f"}</strong>
+	</div>
+
+	<form action="{"/admin.php"|amake_url}" method="post" class="form-inline">
+		<input type="hidden" name="module" value="{$module_name}">
+		<input type="hidden" name="action" value="nfcAdjustAct">
+		<input type="hidden" name="id" value="{$data.id}">
+		<input type="hidden" name="nfc_id" value="{$nfc_id|escape:'html'}">
+
+		<label>
+			{"amount"|translate}
+			<input type="number" step="0.01" name="amount" value="" placeholder="10.00 / -10.00" style="width: 140px;">
+		</label>
+		<button type="submit" class="btn-submit" style="margin-left: 10px;">{"submit"|translate}</button>
+	</form>
+</div>
+
 <table class="tbl_list">
 	<thead>
 	<tr>
